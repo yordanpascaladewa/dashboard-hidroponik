@@ -91,9 +91,6 @@ export default function Login() {
           <div className="mt-10 text-center">
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold tracking-wide">
               TUGAS AKHIR © 2026<br/>
-              Yordan Pascaladewa<br/>
-              Raditya Jordy Anargya Rizki<br/>
-              Farras Mahdyan Indarto<br/>
             </p>
           </div>
           
