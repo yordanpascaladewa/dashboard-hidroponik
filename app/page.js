@@ -14,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     
     // Sistem verifikasi sederhana buat demo Tugas Akhir
-    if (username === "admin" && password === "admin123") {
+    if (username === "hidroponik" && password === "sarjanateknik") {
       router.push("/dashboard");
     } else {
       setError("Username atau password salah bro!");
