@@ -39,7 +39,7 @@ export default function Login() {
           {/* Header Logo & Judul */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400 dark:from-emerald-400 dark:to-teal-300">
-              Fertigasi Pintar
+              Dashboard Hidroponik
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 font-medium">
               Sistem Hidroponik Adaptif

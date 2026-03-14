@@ -58,7 +58,7 @@ export default function Dashboard() {
               <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400 dark:from-emerald-400 dark:to-teal-300">
                 Dashboard Fertigasi
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium text-sm">Sistem Hidroponik Adaptif Multi-Komoditas</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium text-sm">Sistem Hidroponik Adaptif</p>
             </div>
             
             {/* Control Panel Kanan */}
