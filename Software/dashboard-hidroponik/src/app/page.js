@@ -22,11 +22,12 @@ export default function Dashboard() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+
+    // PERBAIKAN: Menarik data baru dari database setiap 2 detik (2000ms)
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  // Format waktu update terakhir
   const lastUpdate = data.timestamp 
     ? new Date(data.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' }) 
     : '--:--:--';
@@ -35,7 +36,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 p-8 font-sans text-slate-800">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header Section */}
         <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div>
             <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 mb-2">
@@ -61,18 +61,14 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Loading State */}
         {loading ? (
           <div className="flex flex-col items-center justify-center h-64 bg-white rounded-3xl shadow-sm border border-slate-100">
             <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
             <div className="text-slate-500 font-medium animate-pulse">Menghubungkan ke mikrokontroler...</div>
           </div>
         ) : (
-          
-          /* Sensor Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            {/* Card Suhu */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-110 transition-transform"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
@@ -86,7 +82,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Card pH */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
@@ -100,7 +95,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Card TDS */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-50 rounded-full group-hover:scale-110 transition-transform"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
@@ -114,7 +108,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Card Usia */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute -right-6 -top-6 w-24 h-24 bg-orange-50 rounded-full group-hover:scale-110 transition-transform"></div>
               <div className="flex justify-between items-start mb-4 relative z-10">
