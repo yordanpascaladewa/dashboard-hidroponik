@@ -1,20 +1,18 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Tolong tambahkan MONGODB_URI di Vercel Environment Variables');
-}
-
-let cached = global.mongoose;
-if (!cached) cached = global.mongoose = { conn: null, promise: null };
-
-export async function connectToDatabase() {
+const connectMongoDB = async () => {
+  try {
+    // Biar gak bikin koneksi baru terus-terusan kalau udah nyambung
+    if (mongoose.connection.readyState === 1) {
+      return mongoose.connection.asPromise();
+    }
     
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
+    // Pastikan di Vercel bagian Environment Variables udah ada MONGODB_URI
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("Berhasil connect ke MongoDB Atlas");
+  } catch (error) {
+    console.log("Error koneksi ke MongoDB: ", error);
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
-}
+};
+
+export default connectMongoDB;
