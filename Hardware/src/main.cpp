@@ -14,7 +14,7 @@
 // ==========================================
 const char* ssid = "Sagi56A";         
 const char* password = "m4rk1n05A"; 
-const String serverName = "https://dashboardhidroponik-git-main-yordanpascaladewas-projects.vercel.app/api/telemetry";
+const String serverName = "https://dashboardhidroponik-mu.vercel.app/api/telemetry";  
 
 // ==========================================
 // 1. DEFINISI PIN HARDWARE ESP32
@@ -141,6 +141,7 @@ void loop() {
     lastDataSent = millis();
   }
 
+  // Jika belum set tanggal via Rotary Encoder, sistem standby dan tidak ngirim data
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
     digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
@@ -306,8 +307,11 @@ void bacaRotaryEncoder() {
 
 void kirimDataKeWeb() {
   if (WiFi.status() == WL_CONNECTED) {
+    WiFiClientSecure client;
+    client.setInsecure(); // Mengabaikan validasi sertifikat SSL Vercel
+
     HTTPClient http;
-    http.begin(serverName);
+    http.begin(client, serverName); // Menggunakan objek client untuk HTTPS
     http.addHeader("Content-Type", "application/json");
 
     String statusString = "RUNNING_NORMAL";
