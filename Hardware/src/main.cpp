@@ -8,13 +8,15 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <Preferences.h> // Library untuk memori internal
 
 // ==========================================
 // KREDENSIAL WIFI & SERVER VERCEL
 // ==========================================
 const char* ssid = "Sagi56A";         
 const char* password = "m4rk1n05A"; 
-const String serverName = "https://dashboardhidroponik-mu.vercel.app/api/telemetry";  
+// Pastikan URL pakai domain utama yang udah jalan
+const String serverName = "https://dashboardhidroponik-mu.vercel.app/api/telemetry";
 
 // ==========================================
 // 1. DEFINISI PIN HARDWARE ESP32
@@ -40,6 +42,7 @@ Adafruit_ADS1115 ads;
 RTC_DS3231 rtc;
 OneWire oneWire(PIN_SUHU_DS18B20);
 DallasTemperature sensorSuhu(&oneWire);
+Preferences memoriAlat; // Objek untuk Flash Memory
 
 // Prototype
 void bacaSemuaSensor();
@@ -118,6 +121,27 @@ void setup() {
   pinMode(PIN_ENCODER_DT, INPUT_PULLUP);
   pinMode(PIN_ENCODER_SW, INPUT_PULLUP);
   lastStateCLK = digitalRead(PIN_ENCODER_CLK);
+
+  // ==========================================
+  // LOAD DATA DARI MEMORI FLASH
+  // ==========================================
+  memoriAlat.begin("hidroponik", false); 
+  
+  // Ambil memori, kalau kosong defaultnya false/0
+  sudahSetTanggal = memoriAlat.getBool("set", false);
+  usiaAktual = memoriAlat.getInt("usia", 0);
+  hariTerakhirDicek = memoriAlat.getInt("haricek", -1);
+  indeksTanaman = memoriAlat.getInt("tanaman", 0);
+
+  if (sudahSetTanggal == true) {
+    currentState = MONITOR;
+    currentSystemState = RUNNING_NORMAL;
+    Serial.println("[SYSTEM] Melanjutkan dari memori sebelumnya.");
+    lcd.clear();
+  } else {
+    currentState = PILIH_TANAMAN; // Langsung arahin ke menu milih
+    Serial.println("[SYSTEM] Sistem baru, menunggu input encoder.");
+  }
 }
 
 void loop() {
@@ -135,13 +159,13 @@ void loop() {
 
   kelolaWaktuDanUsia();
 
-  // --- NGIRIM DATA KE VERCEL SETIAP 2 DETIK (REAL-TIME POLLING) ---
+  // --- NGIRIM DATA KE VERCEL SETIAP 2 DETIK ---
   if (sudahSetTanggal && (millis() - lastDataSent > 2000)) {
     kirimDataKeWeb();
     lastDataSent = millis();
   }
 
-  // Jika belum set tanggal via Rotary Encoder, sistem standby dan tidak ngirim data
+  // Tahan relay kalau belum di-setting
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
     digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
@@ -149,6 +173,7 @@ void loop() {
     return; 
   }
 
+  // --- LOGIKA POMPA DOSING ---
   switch (currentSystemState) {
     case RUNNING_NORMAL:
       if (currentPH < targetPH_Minimal) {
@@ -229,6 +254,10 @@ void kelolaWaktuDanUsia() {
     else if (now.day() != hariTerakhirDicek) {
       usiaAktual++;
       hariTerakhirDicek = now.day(); 
+      
+      // Update memori setiap ganti hari
+      memoriAlat.putInt("usia", usiaAktual);
+      memoriAlat.putInt("haricek", hariTerakhirDicek);
     }
   }
 }
@@ -290,14 +319,31 @@ void bacaRotaryEncoder() {
 
   if (digitalRead(PIN_ENCODER_SW) == LOW) {
     if (millis() - lastButtonPress > 250) { 
-      if (currentState == MONITOR && !sudahSetTanggal) { currentState = PILIH_TANAMAN; lcd.clear(); } 
-      else if (currentState == PILIH_TANAMAN) { currentState = SET_USIA; lcd.clear(); } 
+      
+      // Fitur Hapus Memori / Factory Reset kalau dipencet pas lagi Running
+      if (currentState == MONITOR && sudahSetTanggal) { 
+        sudahSetTanggal = false;
+        currentState = PILIH_TANAMAN;
+        memoriAlat.putBool("set", false); // Reset status di memori
+        lcd.clear(); 
+      } 
+      else if (currentState == PILIH_TANAMAN) { 
+        currentState = SET_USIA; 
+        lcd.clear(); 
+      } 
       else if (currentState == SET_USIA) {
         usiaAktual = usiaAwalBibit;
         sudahSetTanggal = true;
         currentState = MONITOR;
         currentSystemState = RUNNING_NORMAL;
         hariTerakhirDicek = rtc.now().day(); 
+        
+        // Simpan semua parameter ke Flash Memory
+        memoriAlat.putBool("set", sudahSetTanggal);
+        memoriAlat.putInt("usia", usiaAktual);
+        memoriAlat.putInt("haricek", hariTerakhirDicek);
+        memoriAlat.putInt("tanaman", indeksTanaman);
+        
         lcd.clear();
       }
       lastButtonPress = millis();
@@ -308,10 +354,10 @@ void bacaRotaryEncoder() {
 void kirimDataKeWeb() {
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
-    client.setInsecure(); // Mengabaikan validasi sertifikat SSL Vercel
+    client.setInsecure(); // Bypass SSL Vercel
 
     HTTPClient http;
-    http.begin(client, serverName); // Menggunakan objek client untuk HTTPS
+    http.begin(client, serverName);
     http.addHeader("Content-Type", "application/json");
 
     String statusString = "RUNNING_NORMAL";
