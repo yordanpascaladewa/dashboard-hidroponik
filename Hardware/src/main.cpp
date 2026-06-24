@@ -1,9 +1,19 @@
+#include <Arduino.h> // Wajib untuk PlatformIO
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_ADS1X15.h>
 #include <RTClib.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// ==========================================
+// KREDENSIAL WIFI & SERVER VERCEL
+// ==========================================
+const char* ssid = "SAGI56_Game";         
+const char* password = "m4rk1n05"; 
+const String serverName = "https://dashboardhidroponik-git-main-yordanpascaladewas-projects.vercel.app/api/telemetry";
 
 // ==========================================
 // 1. DEFINISI PIN HARDWARE ESP32
@@ -38,6 +48,7 @@ void bacaSemuaSensor();
 void perbaruiTampilanLCD();
 void bacaRotaryEncoder();
 void kelolaWaktuDanUsia();
+void kirimDataKeWeb();
 
 // ==========================================
 // 4. VARIABEL STATE MACHINE & UI MENU
@@ -55,7 +66,7 @@ int indeksTanaman = 0;
 bool sudahSetTanggal = false;
 int usiaAwalBibit = 1;
 int usiaAktual = 0;
-int hariTerakhirDicek = -1; // Menyimpan tanggal terakhir untuk update usia
+int hariTerakhirDicek = -1; 
 
 // Variabel Pembacaan Sensor
 float currentPH = 0.0;
@@ -73,13 +84,23 @@ unsigned long lastButtonPress = 0;
 // Timer Non-Blocking untuk Manajemen Data
 unsigned long lastSensorRead = 0;
 unsigned long lastLCDUpdate = 0;
-unsigned long dosingTimer = 0; // Timer khusus untuk FSM Aktuator
+unsigned long dosingTimer = 0; 
+unsigned long lastDataSent = 0; // Timer untuk ngirim data ke Vercel
 
 // ==========================================
 // 5. FUNGSI SETUP (EKSEKUSI AWAL)
 // ==========================================
 void setup() {
   Serial.begin(115200);
+  
+  // --- KONEKSI WIFI ---
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connected!");
   
   // Setup Jalur I2C
   Wire.begin(I2C_SDA, I2C_SCL);
@@ -138,12 +159,18 @@ void loop() {
   // Update Usia Tanaman Berdasarkan RTC
   kelolaWaktuDanUsia();
 
+  // --- NGIRIM DATA KE VERCEL SETIAP 5 DETIK ---
+  if (sudahSetTanggal && (millis() - lastDataSent > 5000)) {
+    kirimDataKeWeb();
+    lastDataSent = millis();
+  }
+
   // --- KUNCI KEAMANAN STANDBY ---
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
     digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
     digitalWrite(PIN_RELAY_PH_UP, HIGH);
-    return; // Loop berhenti di sini jika alat baru dicolok
+    return; // Loop berhenti di sini jika alat baru dicolok / standby
   }
 
   // ==========================================
@@ -241,14 +268,12 @@ void bacaSemuaSensor() {
 void kelolaWaktuDanUsia() {
   if (sudahSetTanggal) {
     DateTime now = rtc.now();
-    // Inisialisasi awal hariSaatIni jika baru di-set
     if (hariTerakhirDicek == -1) {
       hariTerakhirDicek = now.day();
     } 
-    // Jika hari berganti (misal dari tgl 12 ke 13)
     else if (now.day() != hariTerakhirDicek) {
       usiaAktual++;
-      hariTerakhirDicek = now.day(); // Update ke hari yang baru
+      hariTerakhirDicek = now.day(); 
       Serial.print("[RTC] Hari berganti! Umur tanaman sekarang: ");
       Serial.println(usiaAktual);
     }
@@ -343,7 +368,6 @@ void bacaRotaryEncoder() {
         sudahSetTanggal = true;
         currentState = MONITOR;
         
-        // Reset state FSM dan Timer saat baru masuk mode aktif
         currentSystemState = RUNNING_NORMAL;
         hariTerakhirDicek = rtc.now().day(); 
         lcd.clear();
@@ -352,5 +376,40 @@ void bacaRotaryEncoder() {
       }
       lastButtonPress = millis();
     }
+  }
+}
+
+// ==========================================
+// 11. FUNGSI KIRIM DATA KE VERCEL (JSON)
+// ==========================================
+void kirimDataKeWeb() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverName);
+    http.addHeader("Content-Type", "application/json");
+
+    // Ubah status FSM ke String untuk dikirim ke web
+    String statusString = "RUNNING_NORMAL";
+    if (currentSystemState == PH_UP_INJECT) statusString = "PH_UP_INJECT";
+    else if (currentSystemState == TDS_INJECT_A) statusString = "TDS_INJECT_A";
+    else if (currentSystemState == TDS_INJECT_B) statusString = "TDS_INJECT_B";
+    else if (currentSystemState == TDS_JEDA) statusString = "TDS_JEDA";
+    else if (currentSystemState == TUNGGU_REAKSI) statusString = "TUNGGU_REAKSI";
+
+    // Format data menjadi JSON
+    String httpRequestData = "{\"suhu\":" + String(temperature, 1) + 
+                             ",\"ph\":" + String(currentPH, 2) + 
+                             ",\"tds\":" + String(currentPPM, 0) + 
+                             ",\"usia\":" + String(usiaAktual) +
+                             ",\"status\":\"" + statusString + "\"}";
+
+    int httpResponseCode = http.POST(httpRequestData);
+    
+    Serial.print("[HTTP POST] Response code: ");
+    Serial.println(httpResponseCode);
+    
+    http.end();
+  } else {
+    Serial.println("[HTTP POST] Error: WiFi Disconnected");
   }
 }
