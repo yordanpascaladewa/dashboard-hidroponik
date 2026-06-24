@@ -1,4 +1,4 @@
-#include <Arduino.h> // Wajib untuk PlatformIO
+#include <Arduino.h> 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_ADS1X15.h>
@@ -24,7 +24,6 @@ const String serverName = "https://dashboardhidroponik-git-main-yordanpascaladew
 #define PIN_RELAY_NUTRISI_A 26
 #define PIN_RELAY_NUTRISI_B 27
 #define PIN_RELAY_PH_UP     25
-// (Relay IN4 Kosong / Tidak dipakai)
 
 #define PIN_ENCODER_CLK 18
 #define PIN_ENCODER_DT  19
@@ -41,18 +40,14 @@ RTC_DS3231 rtc;
 OneWire oneWire(PIN_SUHU_DS18B20);
 DallasTemperature sensorSuhu(&oneWire);
 
-// ==========================================
-// 3. DEKLARASI FUNGSI (FUNCTION PROTOTYPES)
-// ==========================================
+// Prototype
 void bacaSemuaSensor();
 void perbaruiTampilanLCD();
 void bacaRotaryEncoder();
 void kelolaWaktuDanUsia();
 void kirimDataKeWeb();
 
-// ==========================================
-// 4. VARIABEL STATE MACHINE & UI MENU
-// ==========================================
+// State & UI Menu
 enum MenuState { MONITOR, PILIH_TANAMAN, SET_USIA };
 MenuState currentState = MONITOR;
 
@@ -68,7 +63,7 @@ int usiaAwalBibit = 1;
 int usiaAktual = 0;
 int hariTerakhirDicek = -1; 
 
-// Variabel Pembacaan Sensor
+// Variabel Sensor
 float currentPH = 0.0;
 float currentPPM = 0.0;
 float temperature = 0.0;
@@ -77,23 +72,18 @@ float temperature = 0.0;
 float targetPH_Minimal = 5.5;
 float targetPPM_Minimal = 1000.0; 
 
-// Variabel Rotary Encoder
+// Rotary Encoder & Timer
 int lastStateCLK;
 unsigned long lastButtonPress = 0;
-
-// Timer Non-Blocking untuk Manajemen Data
 unsigned long lastSensorRead = 0;
 unsigned long lastLCDUpdate = 0;
 unsigned long dosingTimer = 0; 
-unsigned long lastDataSent = 0; // Timer untuk ngirim data ke Vercel
+unsigned long lastDataSent = 0; 
 
-// ==========================================
-// 5. FUNGSI SETUP (EKSEKUSI AWAL)
-// ==========================================
 void setup() {
   Serial.begin(115200);
   
-  // --- KONEKSI WIFI ---
+  // Koneksi WiFi
   Serial.print("Connecting to WiFi");
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -102,10 +92,8 @@ void setup() {
   }
   Serial.println("\nWiFi Connected!");
   
-  // Setup Jalur I2C
   Wire.begin(I2C_SDA, I2C_SCL);
   
-  // Inisialisasi LCD
   lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -113,134 +101,106 @@ void setup() {
   lcd.setCursor(0, 1); lcd.print(" UNIVERSAL SYSTEM   ");
   delay(2000);
 
-  // Inisialisasi Sensor & Modul
   ads.begin(0x48); 
   rtc.begin();
   sensorSuhu.begin();
 
-  // Setup Pin Relay (Aktif LOW)
   pinMode(PIN_RELAY_NUTRISI_A, OUTPUT);
   pinMode(PIN_RELAY_NUTRISI_B, OUTPUT);
   pinMode(PIN_RELAY_PH_UP, OUTPUT);
   
-  // Matikan semua relay di awal
   digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
   digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
   digitalWrite(PIN_RELAY_PH_UP, HIGH);
 
-  // Setup Pin Encoder
   pinMode(PIN_ENCODER_CLK, INPUT_PULLUP);
   pinMode(PIN_ENCODER_DT, INPUT_PULLUP);
   pinMode(PIN_ENCODER_SW, INPUT_PULLUP);
   lastStateCLK = digitalRead(PIN_ENCODER_CLK);
-  
-  Serial.println("Sistem Berhasil Booting. Menunggu Setup...");
 }
 
-// ==========================================
-// 6. LOOP UTAMA (JANTUNG SISTEM)
-// ==========================================
 void loop() {
-  // Telemetri UI: Encoder selalu dibaca tanpa delay
   bacaRotaryEncoder();
 
-  // Manajemen Data Sensor setiap 1 detik
   if (millis() - lastSensorRead > 1000) {
     bacaSemuaSensor();
     lastSensorRead = millis();
   }
 
-  // Perbarui UI LCD setiap 500ms
   if (millis() - lastLCDUpdate > 500) {
     perbaruiTampilanLCD();
     lastLCDUpdate = millis();
   }
 
-  // Update Usia Tanaman Berdasarkan RTC
   kelolaWaktuDanUsia();
 
-  // --- NGIRIM DATA KE VERCEL SETIAP 5 DETIK ---
-  if (sudahSetTanggal && (millis() - lastDataSent > 5000)) {
+  // --- NGIRIM DATA KE VERCEL SETIAP 2 DETIK (REAL-TIME POLLING) ---
+  if (sudahSetTanggal && (millis() - lastDataSent > 2000)) {
     kirimDataKeWeb();
     lastDataSent = millis();
   }
 
-  // --- KUNCI KEAMANAN STANDBY ---
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
     digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
     digitalWrite(PIN_RELAY_PH_UP, HIGH);
-    return; // Loop berhenti di sini jika alat baru dicolok / standby
+    return; 
   }
 
-  // ==========================================
-  // 7. BLOK KONTROL AKTUATOR (NON-BLOCKING FSM)
-  // ==========================================
   switch (currentSystemState) {
-    
     case RUNNING_NORMAL:
       if (currentPH < targetPH_Minimal) {
         currentSystemState = PH_UP_INJECT;
-        digitalWrite(PIN_RELAY_PH_UP, LOW); // Pompa ON
-        dosingTimer = millis();             // Mulai hitung waktu
-        Serial.println("[AKTUATOR] Pompa pH UP Menyala!");
+        digitalWrite(PIN_RELAY_PH_UP, LOW); 
+        dosingTimer = millis();             
       } 
       else if (currentPPM < targetPPM_Minimal) {
         currentSystemState = TDS_INJECT_A;
-        digitalWrite(PIN_RELAY_NUTRISI_A, LOW); // Pompa A ON
+        digitalWrite(PIN_RELAY_NUTRISI_A, LOW); 
         dosingTimer = millis();
-        Serial.println("[AKTUATOR] Pompa Nutrisi A Menyala!");
       }
       break;
 
     case PH_UP_INJECT:
-      if (millis() - dosingTimer >= 2000) {     // Jika sudah 2 detik
-        digitalWrite(PIN_RELAY_PH_UP, HIGH);    // Pompa OFF
+      if (millis() - dosingTimer >= 2000) {     
+        digitalWrite(PIN_RELAY_PH_UP, HIGH);    
         currentSystemState = TUNGGU_REAKSI;
-        dosingTimer = millis();                 // Mulai hitung jeda
-        Serial.println("[AKTUATOR] Pompa pH UP Mati. Menunggu reaksi...");
+        dosingTimer = millis();                 
       }
       break;
 
     case TDS_INJECT_A:
       if (millis() - dosingTimer >= 2000) {
-        digitalWrite(PIN_RELAY_NUTRISI_A, HIGH); // Pompa A OFF
+        digitalWrite(PIN_RELAY_NUTRISI_A, HIGH); 
         currentSystemState = TDS_JEDA;
         dosingTimer = millis();
-        Serial.println("[AKTUATOR] Pompa Nutrisi A Mati. Jeda sebelum B...");
       }
       break;
 
     case TDS_JEDA:
-      if (millis() - dosingTimer >= 1000) {      // Jeda 1 detik antar A dan B
+      if (millis() - dosingTimer >= 1000) {      
         currentSystemState = TDS_INJECT_B;
-        digitalWrite(PIN_RELAY_NUTRISI_B, LOW);  // Pompa B ON
+        digitalWrite(PIN_RELAY_NUTRISI_B, LOW);  
         dosingTimer = millis();
-        Serial.println("[AKTUATOR] Pompa Nutrisi B Menyala!");
       }
       break;
 
     case TDS_INJECT_B:
       if (millis() - dosingTimer >= 2000) {
-        digitalWrite(PIN_RELAY_NUTRISI_B, HIGH); // Pompa B OFF
+        digitalWrite(PIN_RELAY_NUTRISI_B, HIGH); 
         currentSystemState = TUNGGU_REAKSI;
         dosingTimer = millis();
-        Serial.println("[AKTUATOR] Pompa Nutrisi B Mati. Menunggu reaksi...");
       }
       break;
 
     case TUNGGU_REAKSI:
-      if (millis() - dosingTimer >= 10000) {     // Tunggu 10 detik agar larut
-        currentSystemState = RUNNING_NORMAL;     // Kembali pantau sensor
-        Serial.println("[SISTEM] Jeda selesai. Kembali memantau sensor.");
+      if (millis() - dosingTimer >= 10000) {     
+        currentSystemState = RUNNING_NORMAL;     
       }
       break;
   }
 }
 
-// ==========================================
-// 8. FUNGSI PEMBACAAN SENSOR & RTC
-// ==========================================
 void bacaSemuaSensor() {
   sensorSuhu.requestTemperatures();
   temperature = sensorSuhu.getTempCByIndex(0);
@@ -255,52 +215,31 @@ void bacaSemuaSensor() {
   float voltage_tds = ads.computeVolts(adc_tds);
   currentPPM = voltage_tds * 575.83; 
 
-  // --- LOG TELEMETRI KE SERIAL MONITOR ---
-  Serial.print("[LOG] Suhu: "); 
-  Serial.print(temperature, 1);
-  Serial.print(" C | pH: "); 
-  Serial.print(currentPH, 2);
-  Serial.print(" | TDS: "); 
-  Serial.print(currentPPM, 0);
-  Serial.println(" ppm");
+  Serial.print("[LOG] Suhu: "); Serial.print(temperature, 1);
+  Serial.print(" C | pH: "); Serial.print(currentPH, 2);
+  Serial.print(" | TDS: "); Serial.print(currentPPM, 0); Serial.println(" ppm");
 }
 
 void kelolaWaktuDanUsia() {
   if (sudahSetTanggal) {
     DateTime now = rtc.now();
-    if (hariTerakhirDicek == -1) {
-      hariTerakhirDicek = now.day();
-    } 
+    if (hariTerakhirDicek == -1) hariTerakhirDicek = now.day();
     else if (now.day() != hariTerakhirDicek) {
       usiaAktual++;
       hariTerakhirDicek = now.day(); 
-      Serial.print("[RTC] Hari berganti! Umur tanaman sekarang: ");
-      Serial.println(usiaAktual);
     }
   }
 }
 
-// ==========================================
-// 9. FUNGSI UI / LAYAR LCD
-// ==========================================
 void perbaruiTampilanLCD() {
   switch (currentState) {
     case MONITOR:
-      lcd.setCursor(0, 0); 
-      lcd.print("PLANT:" + daftarTanaman[indeksTanaman] + "          ");
-      
+      lcd.setCursor(0, 0); lcd.print("PLANT:" + daftarTanaman[indeksTanaman] + "          ");
       lcd.setCursor(0, 1);
-      if (sudahSetTanggal) {
-        lcd.print("UMUR : H-" + String(usiaAktual) + "    ");
-      } else {
-        lcd.print("UMUR : [STBY]   ");
-      }
-      lcd.setCursor(14, 1); 
-      lcd.print(String(temperature, 1) + char(223) + "C ");
-      
-      lcd.setCursor(0, 2);
-      lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
-      
+      if (sudahSetTanggal) lcd.print("UMUR : H-" + String(usiaAktual) + "    ");
+      else lcd.print("UMUR : [STBY]   ");
+      lcd.setCursor(14, 1); lcd.print(String(temperature, 1) + char(223) + "C ");
+      lcd.setCursor(0, 2); lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
       lcd.setCursor(0, 3);
       if (!sudahSetTanggal)                          lcd.print("STAT: STANDBY WAIT  ");
       else if (currentSystemState == PH_UP_INJECT)   lcd.print("STAT: INJECT pH UP  ");
@@ -327,9 +266,6 @@ void perbaruiTampilanLCD() {
   }
 }
 
-// ==========================================
-// 10. FUNGSI KENDALI MENU (ROTARY ENCODER)
-// ==========================================
 void bacaRotaryEncoder() {
   int currentStateCLK = digitalRead(PIN_ENCODER_CLK);
   if (currentStateCLK != lastStateCLK  && currentStateCLK == 1) {
@@ -337,9 +273,7 @@ void bacaRotaryEncoder() {
       if (currentState == PILIH_TANAMAN) {
         indeksTanaman++;
         if (indeksTanaman >= jumlahTanaman) indeksTanaman = 0;
-      } else if (currentState == SET_USIA) {
-        usiaAwalBibit++;
-      }
+      } else if (currentState == SET_USIA) usiaAwalBibit++;
     } else {
       if (currentState == PILIH_TANAMAN) {
         indeksTanaman--;
@@ -352,43 +286,29 @@ void bacaRotaryEncoder() {
   }
   lastStateCLK = currentStateCLK;
 
-  int btnState = digitalRead(PIN_ENCODER_SW);
-  if (btnState == LOW) {
+  if (digitalRead(PIN_ENCODER_SW) == LOW) {
     if (millis() - lastButtonPress > 250) { 
-      if (currentState == MONITOR && !sudahSetTanggal) {
-        currentState = PILIH_TANAMAN; 
-        lcd.clear();
-      } 
-      else if (currentState == PILIH_TANAMAN) {
-        currentState = SET_USIA; 
-        lcd.clear();
-      } 
+      if (currentState == MONITOR && !sudahSetTanggal) { currentState = PILIH_TANAMAN; lcd.clear(); } 
+      else if (currentState == PILIH_TANAMAN) { currentState = SET_USIA; lcd.clear(); } 
       else if (currentState == SET_USIA) {
         usiaAktual = usiaAwalBibit;
         sudahSetTanggal = true;
         currentState = MONITOR;
-        
         currentSystemState = RUNNING_NORMAL;
         hariTerakhirDicek = rtc.now().day(); 
         lcd.clear();
-        
-        Serial.println("[SISTEM] Setup Selesai. Sistem Masuk Mode RUNNING.");
       }
       lastButtonPress = millis();
     }
   }
 }
 
-// ==========================================
-// 11. FUNGSI KIRIM DATA KE VERCEL (JSON)
-// ==========================================
 void kirimDataKeWeb() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     http.begin(serverName);
     http.addHeader("Content-Type", "application/json");
 
-    // Ubah status FSM ke String untuk dikirim ke web
     String statusString = "RUNNING_NORMAL";
     if (currentSystemState == PH_UP_INJECT) statusString = "PH_UP_INJECT";
     else if (currentSystemState == TDS_INJECT_A) statusString = "TDS_INJECT_A";
@@ -396,7 +316,6 @@ void kirimDataKeWeb() {
     else if (currentSystemState == TDS_JEDA) statusString = "TDS_JEDA";
     else if (currentSystemState == TUNGGU_REAKSI) statusString = "TUNGGU_REAKSI";
 
-    // Format data menjadi JSON
     String httpRequestData = "{\"suhu\":" + String(temperature, 1) + 
                              ",\"ph\":" + String(currentPH, 2) + 
                              ",\"tds\":" + String(currentPPM, 0) + 
@@ -404,10 +323,7 @@ void kirimDataKeWeb() {
                              ",\"status\":\"" + statusString + "\"}";
 
     int httpResponseCode = http.POST(httpRequestData);
-    
-    Serial.print("[HTTP POST] Response code: ");
-    Serial.println(httpResponseCode);
-    
+    Serial.print("[HTTP POST] Response: "); Serial.println(httpResponseCode);
     http.end();
   } else {
     Serial.println("[HTTP POST] Error: WiFi Disconnected");
