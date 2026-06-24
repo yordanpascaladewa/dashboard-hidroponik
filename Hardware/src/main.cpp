@@ -11,8 +11,8 @@
 // ==========================================
 // KREDENSIAL WIFI & SERVER VERCEL
 // ==========================================
-const char* ssid = "Sagi56_Game";         
-const char* password = "m4rk1n05"; 
+const char* ssid = "Sagi56A";         
+const char* password = "m4rk1n05A"; 
 const String serverName = "https://dashboardhidroponik-git-main-yordanpascaladewas-projects.vercel.app/api/telemetry";
 
 // ==========================================
