@@ -7,6 +7,7 @@
 #include <DallasTemperature.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 
 // ==========================================
 // KREDENSIAL WIFI & SERVER VERCEL
