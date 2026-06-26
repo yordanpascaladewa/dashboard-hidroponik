@@ -1,13 +1,29 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
+} from 'recharts';
+import { 
+  Thermometer, Droplets, FlaskConical, Calendar, 
+  Settings, Bell, User, LayoutDashboard, BarChart3, 
+  RemoteControl, BookOpen, Activity, HelpCircle, LogOut,
+  ChevronDown, RefreshCw, Send
+} from 'lucide-react';
 
-export default function Dashboard() {
-  const [data, setData] = useState({ suhu: 0, ph: 0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
+export default function AeroGrowDashboard() {
+  const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Data target berdasarkan komoditas
+  const plantTargets = {
+    SELADA: { ph: "6.0 - 6.5", tds: "800 - 1200 PPM" },
+    PAKCOY: { ph: "6.5 - 7.0", tds: "1050 - 1400 PPM" },
+    BAYAM: { ph: "6.0 - 7.0", tds: "1260 - 1540 PPM" },
+    KANGKUNG: { ph: "5.5 - 6.5", tds: "1000 - 1200 PPM" }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,21 +35,18 @@ export default function Dashboard() {
           setData(result.data[0]);
           const formattedChart = result.data.map(item => ({
             waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-            Suhu: item.suhu,
             pH: item.ph,
             TDS: item.tds
           })).reverse();
           setChartData(formattedChart);
         }
       } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching telemetry:", error);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 2000);
+    const interval = setInterval(fetchData, 5000); // Polling setiap 5 detik
     return () => clearInterval(interval);
   }, []);
 
@@ -46,117 +59,198 @@ export default function Dashboard() {
         body: JSON.stringify({ targetTanaman }),
       });
     } catch (error) {
-      console.error(error);
+      console.error("Error sending command:", error);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const isRunning = data.status !== 'STANDBY';
-
   return (
-    <div className="min-h-screen bg-[#fafafa] p-6 font-sans text-zinc-800 selection:bg-emerald-100">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* HEADER */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-zinc-200 pb-6">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">DFT Telemetry System</h1>
-            <p className="text-sm text-zinc-500 mt-1">Sistem Manajemen & Kontrol Aktuator Jarak Jauh</p>
+    <div className="flex min-h-screen bg-[#F7F9FB] font-sans text-slate-900">
+      
+      {/* SIDE NAVIGATION */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col sticky top-0 h-screen">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
+            <Activity size={20} />
           </div>
-          <div className="mt-4 md:mt-0 flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Status Engine</p>
-              <p className="text-sm font-medium text-zinc-600 mt-0.5">
-                {data.timestamp ? new Date(data.timestamp).toLocaleTimeString('id-ID') : '--:--:--'}
-              </p>
+          <div>
+            <h1 className="font-bold text-lg tracking-tight">System Alpha</h1>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Active Monitoring</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-4 space-y-1 mt-4">
+          <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active />
+          <NavItem icon={<BarChart3 size={18} />} label="Analytics" />
+          <NavItem icon={<RemoteControl size={18} />} label="Command Center" />
+          <NavItem icon={<BookOpen size={18} />} label="Growth Log" />
+          <NavItem icon={<Activity size={18} />} label="System Health" />
+        </nav>
+
+        <div className="p-4 border-t border-slate-100">
+          <button className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors">
+            <RefreshCw size={16} />
+            Export Data
+          </button>
+          <div className="mt-4 space-y-1">
+            <NavItem icon={<HelpCircle size={18} />} label="Support" />
+            <NavItem icon={<LogOut size={18} />} label="Logout" />
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        
+        {/* TOP BAR */}
+        <header className="flex justify-between items-center mb-10">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">AeroGrow Pro - Telemetri DFT</h2>
+            <p className="text-slate-500 text-sm">Monitor dan kontrol nutrisi otomatis real-time.</p>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold uppercase tracking-wide
+              ${data.status !== 'STANDBY' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+              <div className={`w-2 h-2 rounded-full ${data.status !== 'STANDBY' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              <span>Sistem {data.status}</span>
             </div>
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium tracking-wide
-              ${isRunning ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-              <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'}`}></div>
-              {data.status}
+            <div className="flex gap-4">
+              <IconButton icon={<Bell size={20} />} />
+              <IconButton icon={<Settings size={20} />} />
+              <IconButton icon={<User size={20} />} />
             </div>
           </div>
         </header>
 
-        {loading ? (
-          <div className="h-40 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-800 rounded-full animate-spin"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-12 gap-8">
+          
+          {/* LEFT COLUMN: METRICS & CHARTS */}
+          <div className="col-span-12 lg:col-span-8 space-y-8">
             
-            {/* MAIN METRICS & CHART */}
-            <div className="lg:col-span-8 space-y-8">
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Suhu Aktual', val: data.suhu, unit: '°C' },
-                  { label: 'Tingkat pH', val: data.ph, unit: 'pH' },
-                  { label: 'Konsentrasi TDS', val: data.tds, unit: 'PPM' },
-                  { label: 'Usia Tanam', val: data.usia, unit: 'Hari' }
-                ].map((item, i) => (
-                  <div key={i} className="bg-white p-5 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
-                    <p className="text-xs font-medium text-zinc-400 mb-2">{item.label}</p>
-                    <p className="text-2xl font-semibold tracking-tight text-zinc-800">
-                      {item.val}<span className="text-xs font-normal text-zinc-400 ml-1">{item.unit}</span>
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-sm font-semibold text-zinc-800">Analitik Real-Time</h2>
-                  <div className="flex gap-4 text-xs font-medium">
-                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div>pH</span>
-                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-zinc-800"></div>TDS</span>
-                  </div>
-                </div>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
-                      <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} tickMargin={10} />
-                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} />
-                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#18181b', color: '#fafafa', border: 'none', borderRadius: '8px', fontSize: '12px' }}
-                        itemStyle={{ color: '#fafafa' }}
-                      />
-                      <Line yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                      <Line yAxisId="right" type="monotone" dataKey="TDS" stroke="#27272a" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+            {/* METRIC CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard 
+                icon={<Thermometer className="text-slate-400" size={18} />} 
+                label="SUHU AIR" 
+                value={data.suhu.toFixed(1)} 
+                unit="°C" 
+              />
+              <StatCard 
+                icon={<FlaskConical className="text-slate-400" size={18} />} 
+                label="TINGKAT PH" 
+                value={data.ph.toFixed(1)} 
+                unit="" 
+              />
+              <StatCard 
+                icon={<Droplets className="text-slate-400" size={18} />} 
+                label="NUTRISI (TDS)" 
+                value={data.tds} 
+                unit="PPM" 
+              />
+              <StatCard 
+                icon={<Calendar className="text-slate-400" size={18} />} 
+                label="FASE TUMBUH" 
+                value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} 
+                unit="" 
+              />
             </div>
 
-            {/* COMMAND CENTER */}
-            <div className="lg:col-span-4">
-              <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] h-full flex flex-col">
-                <h2 className="text-sm font-semibold text-zinc-800 mb-1">Command Center</h2>
-                <p className="text-xs text-zinc-500 mb-6 border-b border-zinc-100 pb-4">
-                  Bypass input lokal dan kirim target dosing otomatis ke mikrokontroler.
-                </p>
-                
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-2">Pilih Komoditas</label>
-                    <div className="relative">
-                      <select 
-                        value={targetTanaman}
-                        onChange={(e) => setTargetTanaman(e.target.value)}
-                        className="w-full appearance-none bg-zinc-50 border border-zinc-200 text-sm font-medium text-zinc-800 rounded-lg p-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                      >
-                        <option value="SELADA">Selada (pH 6.0 | TDS 800)</option>
-                        <option value="PAKCOY">Pakcoy (pH 6.5 | TDS 1050)</option>
-                        <option value="BAYAM">Bayam (pH 6.2 | TDS 1260)</option>
-                        <option value="KANGKUNG">Kangkung (pH 6.0 | TDS 1000)</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            {/* MAIN ANALYTICS CHART */}
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="font-bold text-lg">Tren Kualitas Air (24 Jam)</h3>
+                  <p className="text-slate-400 text-xs">Korelasi pH dan konsentrasi TDS</p>
+                </div>
+                <div className="flex gap-6 text-xs font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-1 bg-emerald-500 rounded-full" />
+                    <span className="text-slate-500">pH</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-1 bg-slate-300 rounded-full" />
+                    <span className="text-slate-500">TDS</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData.length > 0 ? chartData : defaultChartData}>
+                    <defs>
+                      <linearGradient id="colorPh" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                    <XAxis 
+                      dataKey="waktu" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 12, fill: '#94A3B8'}} 
+                      tickMargin={15}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94A3B8'}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Area type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
+                    <Area type="monotone" dataKey="TDS" stroke="#CBD5E1" strokeWidth={2} fillOpacity={0} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: COMMAND CENTER */}
+          <div className="col-span-12 lg:col-span-4">
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm sticky top-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-slate-50 rounded-lg">
+                  <Settings className="text-slate-700" size={20} />
+                </div>
+                <h3 className="font-bold text-lg">Pusat Kendali</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+                    Pilih Komoditas
+                  </label>
+                  <div className="relative">
+                    <select 
+                      value={targetTanaman}
+                      onChange={(e) => setTargetTanaman(e.target.value)}
+                      className="w-full appearance-none bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 rounded-xl p-4 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
+                    >
+                      <option value="SELADA">Selada Air (Lettuce)</option>
+                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
+                      <option value="BAYAM">Bayam Hijau</option>
+                      <option value="KANGKUNG">Kangkung Air</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Parameter Target</p>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <FlaskConical size={16} />
+                        <span className="text-xs font-medium">pH Ideal</span>
                       </div>
+                      <span className="text-sm font-bold text-emerald-600">{plantTargets[targetTanaman].ph}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Droplets size={16} />
+                        <span className="text-xs font-medium">TDS Ideal</span>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-600">{plantTargets[targetTanaman].tds}</span>
                     </div>
                   </div>
                 </div>
@@ -164,19 +258,68 @@ export default function Dashboard() {
                 <button 
                   onClick={handleKirimKomando}
                   disabled={isSyncing}
-                  className={`mt-8 w-full text-xs font-semibold py-3 px-4 rounded-lg transition-all
-                    ${isSyncing 
-                      ? 'bg-zinc-100 text-zinc-400 cursor-wait' 
-                      : 'bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98]'}`}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                 >
-                  {isSyncing ? 'MENGIRIM...' : 'KIRIM INSTRUKSI'}
+                  {isSyncing ? (
+                    <RefreshCw size={20} className="animate-spin" />
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      <span>Sinkronisasi Sistem</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-
           </div>
-        )}
+
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function NavItem({ icon, label, active = false }) {
+  return (
+    <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+      active 
+        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+    }`}>
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function IconButton({ icon }) {
+  return (
+    <button className="p-2.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 bg-white">
+      {icon}
+    </button>
+  );
+}
+
+function StatCard({ icon, label, value, unit }) {
+  return (
+    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+        <h4 className="text-2xl font-bold text-slate-800 tracking-tight">
+          {value}<span className="text-sm font-normal text-slate-400 ml-1">{unit}</span>
+        </h4>
       </div>
     </div>
   );
 }
+
+const defaultChartData = [
+  { waktu: '00:00', pH: 0.0, TDS: 0 },
+  { waktu: '06:00', pH: 0.0, TDS: 0 },
+  { waktu: '12:00', pH: 0.0, TDS: 0 },
+  { waktu: '18:00', pH: 0.0, TDS: 0 },
+  { waktu: 'Sekarang', pH: 0.0, TDS: 0 },
+];
