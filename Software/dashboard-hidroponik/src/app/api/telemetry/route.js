@@ -1,36 +1,60 @@
 import { NextResponse } from 'next/server';
-import connectMongoDB from '@/lib/mongodb';
-import Telemetry from '@/models/Telemetry';
+import connectMongoDB from '../../../lib/mongodb';
+import Telemetry from '../../../models/Telemetry';
 
-// WAJIB ADA BIAR API NGGAK DI-CACHE SAMA VERCEL
+// Wajib ditambahkan agar Next.js tidak melakukan caching statis pada Vercel
 export const dynamic = 'force-dynamic';
 
-// FUNGSI POST (Dari ESP32)
-export async function POST(request) {
-  try {
-    const { suhu, ph, tds, usia, status } = await request.json();
-    await connectMongoDB();
-    await Telemetry.create({ suhu, ph, tds, usia, status });
-    return NextResponse.json({ message: "Data hidroponik berhasil disimpan!" }, { status: 201 });
-  } catch (error) {
-    console.error("Error POST:", error);
-    return NextResponse.json({ message: "Gagal menyimpan data", error: String(error) }, { status: 500 });
-  }
-}
-
-// FUNGSI GET (Ke Dashboard Web)
+// =========================================================================
+// 1. FUNGSI GET: Menyediakan data untuk Dashboard & Analytics Web
+// =========================================================================
 export async function GET() {
   try {
     await connectMongoDB();
     
-    // Ganti jadi _id: -1 (cara paling ampuh di MongoDB buat narik data paling baru)
-    // Limit 1 aja karena frontend cuma butuh nampilin 1 data terbaru
-    const data = await Telemetry.find().sort({ _id: -1 }).limit(1);
+    // Mengambil 15 data telemetri terbaru untuk kebutuhan grafik tren historis
+    // Diurutkan berdasarkan _id descending (-1) agar data terbaru berada di indeks [0]
+    const data = await Telemetry.find().sort({ _id: -1 }).limit(15);
     
-    // Langsung return 'data' (array), jangan dibungkus { data } lagi
-    return NextResponse.json(data, { status: 200 });
+    // Dibungkus dalam object dengan key 'data' sesuai kebutuhan komponen frontend
+    return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
-    console.error("Error GET:", error);
-    return NextResponse.json({ message: "Gagal mengambil data", error: String(error) }, { status: 500 });
+    console.error("Error GET Telemetry:", error);
+    return NextResponse.json(
+      { message: "Gagal mengambil data telemetri", error: String(error) }, 
+      { status: 500 }
+    );
+  }
+}
+
+// =========================================================================
+// 2. FUNGSI POST: Menerima & Menyimpan data kiriman dari ESP32
+// =========================================================================
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { suhu, ph, tds, usia, status } = body;
+    
+    await connectMongoDB();
+    
+    // Membuat dokumen baru di collection telemetri MongoDB Atlas
+    const newData = await Telemetry.create({ 
+      suhu, 
+      ph, 
+      tds, 
+      usia, 
+      status 
+    });
+    
+    return NextResponse.json(
+      { status: 'success', newData }, 
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error POST Telemetry:", error);
+    return NextResponse.json(
+      { message: "Gagal menyimpan data telemetri", error: String(error) }, 
+      { status: 500 }
+    );
   }
 }

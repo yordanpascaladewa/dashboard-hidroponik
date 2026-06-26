@@ -3,15 +3,10 @@ module.exports = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}", // INI YANG PALING PENTING
   ],
   theme: {
-    extend: {
-      colors: {
-        primary: "#10b981", // Emerald 500
-        surface: "#f7f9fb",
-      },
-    },
+    extend: {},
   },
   plugins: [],
 };
