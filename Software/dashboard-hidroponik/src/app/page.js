@@ -1,17 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const [data, setData] = useState({ suhu: 0, ph: 0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // State untuk Control Panel (Pengganti Rotary Encoder)
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Tarik data telemetri untuk indikator dan grafik
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -19,177 +16,165 @@ export default function Dashboard() {
         const result = await response.json();
         
         if (result.data && result.data.length > 0) {
-          setData(result.data[0]); // Data terbaru untuk Card
-          
-          // Format data untuk grafik (dibalik urutannya biar yang paling kanan itu yang terbaru)
+          setData(result.data[0]);
           const formattedChart = result.data.map(item => ({
-            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             Suhu: item.suhu,
             pH: item.ph,
             TDS: item.tds
           })).reverse();
-          
           setChartData(formattedChart);
         }
       } catch (error) {
-        console.error("Gagal mengambil data telemetri:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 2000); // Update setiap 2 detik
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fungsi untuk mengirim komando target tanaman ke MongoDB
   const handleKirimKomando = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('/api/settings', {
+      await fetch('/api/settings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetTanaman }),
       });
-      
-      if (response.ok) {
-        alert(`Komando target ${targetTanaman} berhasil dikirim ke server! ESP32 akan segera menyesuaikan.`);
-      } else {
-        alert("Gagal mengirim komando ke server.");
-      }
     } catch (error) {
-      console.error("Error setting komando:", error);
-      alert("Terjadi kesalahan jaringan saat mengirim komando.");
+      console.error(error);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const lastUpdate = data.timestamp 
-    ? new Date(data.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' }) 
-    : '--:--:--';
+  const isRunning = data.status !== 'STANDBY';
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#fafafa] p-6 font-sans text-zinc-800 selection:bg-emerald-100">
+      <div className="max-w-6xl mx-auto space-y-8">
         
         {/* HEADER */}
-        <header className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-zinc-200 pb-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 mb-1">
-              Dashboard Fertigasi Hidroponik
-            </h1>
-            <p className="text-slate-500 font-medium">Sistem Telemetri Adaptif Multi-Komoditas</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">DFT Telemetry System</h1>
+            <p className="text-sm text-zinc-500 mt-1">Sistem Manajemen & Kontrol Aktuator Jarak Jauh</p>
           </div>
-          <div className="flex flex-col items-end">
-            <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Status Sistem</p>
-            <div className={`px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center gap-2
-              ${data.status === 'STANDBY' ? 'bg-amber-100 text-amber-800' : 
-                data.status === 'RUNNING_NORMAL' ? 'bg-emerald-100 text-emerald-800' : 
-                'bg-blue-100 text-blue-800'}`}>
-              <span className="relative flex h-3 w-3">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 
-                  ${data.status === 'STANDBY' ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
-                <span className={`relative inline-flex rounded-full h-3 w-3 
-                  ${data.status === 'STANDBY' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-              </span>
-              {data.status.replace(/_/g, ' ')}
+          <div className="mt-4 md:mt-0 flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Status Engine</p>
+              <p className="text-sm font-medium text-zinc-600 mt-0.5">
+                {data.timestamp ? new Date(data.timestamp).toLocaleTimeString('id-ID') : '--:--:--'}
+              </p>
             </div>
-            <p className="text-xs text-slate-400 mt-2 font-medium">Update: {lastUpdate}</p>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium tracking-wide
+              ${isRunning ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
+              <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'}`}></div>
+              {data.status}
+            </div>
           </div>
         </header>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-800 rounded-full animate-spin"></div>
           </div>
         ) : (
-          <>
-            {/* KARTU PARAMETER */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {[
-                { label: 'Suhu Air', value: data.suhu, unit: '°C', color: 'blue' },
-                { label: 'Tingkat pH', value: data.ph, unit: 'pH', color: 'emerald' },
-                { label: 'Nutrisi (TDS)', value: data.tds, unit: 'PPM', color: 'purple' },
-                { label: 'Usia Tanaman', value: data.usia, unit: 'Hari', color: 'orange' },
-              ].map((item, idx) => (
-                <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
-                  <div className={`absolute -right-6 -top-6 w-24 h-24 bg-${item.color}-50 rounded-full group-hover:scale-110 transition-transform`}></div>
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider relative z-10">{item.label}</h3>
-                  <p className="text-4xl font-extrabold text-slate-800 mt-4 relative z-10">
-                    {item.value}<span className={`text-lg text-${item.color}-500 font-bold ml-1`}>{item.unit}</span>
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* MAIN METRICS & CHART */}
+            <div className="lg:col-span-8 space-y-8">
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Suhu Aktual', val: data.suhu, unit: '°C' },
+                  { label: 'Tingkat pH', val: data.ph, unit: 'pH' },
+                  { label: 'Konsentrasi TDS', val: data.tds, unit: 'PPM' },
+                  { label: 'Usia Tanam', val: data.usia, unit: 'Hari' }
+                ].map((item, i) => (
+                  <div key={i} className="bg-white p-5 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
+                    <p className="text-xs font-medium text-zinc-400 mb-2">{item.label}</p>
+                    <p className="text-2xl font-semibold tracking-tight text-zinc-800">
+                      {item.val}<span className="text-xs font-normal text-zinc-400 ml-1">{item.unit}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* GRAFIK LIVE DATA */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <span className="w-2 h-6 bg-emerald-500 rounded-full"></span> Tren Parameter Real-Time
-                </h3>
-                <div className="h-[300px] w-full">
+              <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)]">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-sm font-semibold text-zinc-800">Analitik Real-Time</h2>
+                  <div className="flex gap-4 text-xs font-medium">
+                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div>pH</span>
+                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-zinc-800"></div>TDS</span>
+                  </div>
+                </div>
+                <div className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="waktu" tick={{fontSize: 12, fill: '#64748b'}} tickMargin={10} />
-                      <YAxis yAxisId="left" tick={{fontSize: 12, fill: '#64748b'}} />
-                      <YAxis yAxisId="right" orientation="right" tick={{fontSize: 12, fill: '#64748b'}} />
-                      <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-                      <Line yAxisId="left" type="monotone" dataKey="Suhu" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                      <Line yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={3} dot={false} />
-                      <Line yAxisId="right" type="monotone" dataKey="TDS" stroke="#a855f7" strokeWidth={3} dot={false} />
+                    <LineChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                      <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} tickMargin={10} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#a1a1aa'}} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', color: '#fafafa', border: 'none', borderRadius: '8px', fontSize: '12px' }}
+                        itemStyle={{ color: '#fafafa' }}
+                      />
+                      <Line yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                      <Line yAxisId="right" type="monotone" dataKey="TDS" stroke="#27272a" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+            </div>
 
-              {/* PANEL KONTROL (PENGGANTI ROTARY ENCODER) */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <span className="w-2 h-6 bg-amber-500 rounded-full"></span> Control Panel
-                </h3>
+            {/* COMMAND CENTER */}
+            <div className="lg:col-span-4">
+              <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] h-full flex flex-col">
+                <h2 className="text-sm font-semibold text-zinc-800 mb-1">Command Center</h2>
+                <p className="text-xs text-zinc-500 mb-6 border-b border-zinc-100 pb-4">
+                  Bypass input lokal dan kirim target dosing otomatis ke mikrokontroler.
+                </p>
                 
-                <div className="flex-1 space-y-6">
+                <div className="flex-1 space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">
-                      Target Komoditas
-                    </label>
-                    <select 
-                      value={targetTanaman}
-                      onChange={(e) => setTargetTanaman(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-lg font-bold rounded-xl focus:ring-emerald-500 focus:border-emerald-500 block p-4 outline-none transition-all"
-                    >
-                      <option value="SELADA">Selada (pH 6.0 | TDS 800)</option>
-                      <option value="PAKCOY">Pakcoy (pH 6.5 | TDS 1050)</option>
-                      <option value="BAYAM">Bayam (pH 6.2 | TDS 1260)</option>
-                      <option value="KANGKUNG">Kangkung (pH 6.0 | TDS 1000)</option>
-                    </select>
-                  </div>
-
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <p className="text-sm text-slate-500 leading-relaxed">
-                      Komando yang dikirim akan mengesampingkan input Rotary Encoder fisik di lapangan. Sistem ESP32 akan melakukan dosing otomatis menyesuaikan komoditas yang dipilih.
-                    </p>
+                    <label className="block text-xs font-medium text-zinc-500 mb-2">Pilih Komoditas</label>
+                    <div className="relative">
+                      <select 
+                        value={targetTanaman}
+                        onChange={(e) => setTargetTanaman(e.target.value)}
+                        className="w-full appearance-none bg-zinc-50 border border-zinc-200 text-sm font-medium text-zinc-800 rounded-lg p-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                      >
+                        <option value="SELADA">Selada (pH 6.0 | TDS 800)</option>
+                        <option value="PAKCOY">Pakcoy (pH 6.5 | TDS 1050)</option>
+                        <option value="BAYAM">Bayam (pH 6.2 | TDS 1260)</option>
+                        <option value="KANGKUNG">Kangkung (pH 6.0 | TDS 1000)</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <button 
                   onClick={handleKirimKomando}
                   disabled={isSyncing}
-                  className={`mt-6 w-full text-white font-bold py-4 px-4 rounded-xl transition-all shadow-md
-                    ${isSyncing ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg hover:-translate-y-1'}`}
+                  className={`mt-8 w-full text-xs font-semibold py-3 px-4 rounded-lg transition-all
+                    ${isSyncing 
+                      ? 'bg-zinc-100 text-zinc-400 cursor-wait' 
+                      : 'bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98]'}`}
                 >
-                  {isSyncing ? 'Menyinkronkan...' : 'Kirim Komando ke Hardware'}
+                  {isSyncing ? 'MENGIRIM...' : 'KIRIM INSTRUKSI'}
                 </button>
               </div>
             </div>
-          </>
+
+          </div>
         )}
       </div>
     </div>
