@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
@@ -13,7 +14,6 @@ import {
 export default function AnalyticsDashboard() {
   const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,11 +42,6 @@ export default function AnalyticsDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    setTimeout(() => setShowToast(true), 1500);
-    setTimeout(() => setShowToast(false), 6500);
-  }, []);
-
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] font-sans min-h-screen flex antialiased">
       <aside className="flex flex-col h-screen w-64 border-r border-[#bbcabf]/30 bg-[#f7f9fb] shrink-0 sticky top-0 hidden lg:flex">
@@ -59,7 +54,7 @@ export default function AnalyticsDashboard() {
         
         <nav className="flex-1 px-4 mt-4 space-y-2 overflow-y-auto">
           <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" href="/dashboard" />
-          <SidebarItem icon={<BarChart2 size={20} />} label="Analytics" href="/analytics" active />
+          <SidebarItem icon={<BarChart2 size={20} />} label="Analytics" href="/analytics" />
           <SidebarItem icon={<Sliders size={20} />} label="Command Center" href="/command-center" />
           <SidebarItem icon={<BookOpen size={20} />} label="Growth Log" href="/growth-log" />
           <SidebarItem icon={<Activity size={20} />} label="System Health" href="/system-health" />
@@ -164,14 +159,17 @@ export default function AnalyticsDashboard() {
   );
 }
 
-function SidebarItem({ icon, label, active, href }) {
+function SidebarItem({ icon, label, href }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+
   return (
     <Link 
       href={href} 
       className={`flex items-center gap-4 px-4 py-3 rounded-xl font-medium transition-colors w-full ${
         active 
-          ? 'bg-[#10b981] text-white' 
-          : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'
+          ? 'bg-[#10b981] text-white border-r-4 border-[#00422b]' 
+          : 'text-[#3c4a42] hover:bg-[#eceef0] hover:text-[#191c1e]'
       }`}
     >
       {icon}
