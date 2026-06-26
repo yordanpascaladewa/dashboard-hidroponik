@@ -37,7 +37,7 @@ export default function LoginPage() {
               <input 
                 type="email" 
                 required
-                defaultValue="Hidroponik"
+                defaultValue="yordan@gmail.com"
                 className="w-full bg-[#f7f9fb] border border-[#e0e3e5] rounded-xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all text-[#191c1e]"
               />
             </div>
