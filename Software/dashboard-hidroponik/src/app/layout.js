@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
-  BarChart3, 
-  SettingsRemote, 
+  BarChart, 
+  Settings, 
   BookOpen, 
   Activity, 
   HelpCircle, 
@@ -29,8 +29,8 @@ function SideNavBar() {
 
   const navItems = [
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
-    { label: 'Analytics', icon: <BarChart3 size={20} />, href: '/analytics' },
-    { label: 'Command Center', icon: <SettingsRemote size={20} />, href: '/command-center' },
+    { label: 'Analytics', icon: <BarChart size={20} />, href: '/analytics' },
+    { label: 'Command Center', icon: <Settings size={20} />, href: '/command-center' },
     { label: 'Growth Log', icon: <BookOpen size={20} />, href: '/growth-log' },
     { label: 'System Health', icon: <Activity size={20} />, href: '/system-health' },
   ];
