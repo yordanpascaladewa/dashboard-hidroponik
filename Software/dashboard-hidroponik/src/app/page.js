@@ -6,7 +6,7 @@ import {
 import { 
   Thermometer, Droplets, FlaskConical, Calendar, 
   Settings, Bell, User, LayoutDashboard, BarChart3, 
-  RemoteControl, BookOpen, Activity, HelpCircle, LogOut,
+  Sliders, BookOpen, Activity, HelpCircle, LogOut,
   ChevronDown, RefreshCw, Send
 } from 'lucide-react';
 
@@ -83,7 +83,7 @@ export default function AeroGrowDashboard() {
         <nav className="flex-1 px-4 space-y-1 mt-4">
           <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active />
           <NavItem icon={<BarChart3 size={18} />} label="Analytics" />
-          <NavItem icon={<RemoteControl size={18} />} label="Command Center" />
+          <NavItem icon={<Sliders size={18} />} label="Command Center" />
           <NavItem icon={<BookOpen size={18} />} label="Growth Log" />
           <NavItem icon={<Activity size={18} />} label="System Health" />
         </nav>
