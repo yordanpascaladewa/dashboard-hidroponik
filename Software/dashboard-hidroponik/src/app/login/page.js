@@ -25,8 +25,8 @@ export default function LoginPage() {
           <div className="w-14 h-14 bg-[#10b981] rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-[#10b981]/20">
             <Activity size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-[#191c1e] tracking-tight mb-2">AeroGrow Pro</h1>
-          <p className="text-sm text-[#565e74] font-medium">Precision DFT Telemetry System</p>
+          <h1 className="text-2xl font-bold text-[#191c1e] tracking-tight mb-2">Login Sistem</h1>
+          <p className="text-sm text-[#565e74] font-medium">Sistem Pemberian Nutrisi Hidroponik Otomatis</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
