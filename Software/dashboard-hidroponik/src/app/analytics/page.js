@@ -1,294 +1,334 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
-  BarChart, Bar
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
-  TrendingUp, Activity, Droplets, FlaskConical, 
-  Sparkles, Lightbulb, ChevronRight, Calendar
+  LayoutDashboard, BarChart2, Sliders, BookOpen, Activity, 
+  Settings, HelpCircle, FlaskConical, Droplets, Box, 
+  TrendingUp, Sparkles, Printer, Download, CheckCircle 
 } from 'lucide-react';
 
-// StatCard Component
-function StatCard({ label, value, unit, status, icon, color }) {
-  const colorMap = {
-    emerald: 'bg-emerald-50 text-emerald-500 border-emerald-100',
-    blue: 'bg-blue-50 text-blue-500 border-blue-100',
-    slate: 'bg-slate-50 text-slate-500 border-slate-100'
-  };
+export default function AnalyticsDashboard() {
+  const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
+  const [chartData, setChartData] = useState([]);
+  const [showToast, setShowToast] = useState(false);
 
-  return (
-    <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-      <div className="flex justify-between items-start mb-6">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-        <div className={`p-2 rounded-xl border ${colorMap[color]}`}>
-          {icon}
-        </div>
-      </div>
-      <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-4xl font-black text-slate-800 tracking-tight">{value}</span>
-        <span className="text-sm font-bold text-slate-400 uppercase">{unit}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${color === 'emerald' ? 'bg-emerald-500' : color === 'blue' ? 'bg-blue-400' : 'bg-slate-400'}`} />
-        <span className="text-xs font-bold text-slate-500">{status}</span>
-      </div>
-    </div>
-  );
-}
-
-// InsightItem Component
-function InsightItem({ type, title, desc, source }) {
-  const dotColor = type === 'warning' ? 'bg-amber-400' : 'bg-emerald-400';
-  return (
-    <div className="flex justify-between items-start pt-6 border-t border-slate-50">
-      <div className="flex gap-4">
-        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${dotColor}`} />
-        <div>
-          <p className="text-sm font-bold text-slate-800 leading-tight">{title}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{desc}</p>
-        </div>
-      </div>
-      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter whitespace-nowrap ml-4">
-        SUMBER: {source}
-      </span>
-    </div>
-  );
-}
-
-// Main Page Component
-export default function AnalyticsPage() {
-  const [isClient, setIsClient] = useState(false);
-  const [timeRange, setTimeRange] = useState('7 Hari');
-
+  // Tarik data dari API Telemetry
   useEffect(() => {
-    setIsClient(true);
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/telemetry');
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+          setData(result.data[0]);
+          
+          const formattedChart = result.data.map(item => ({
+            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            pH: item.ph,
+            TDS: item.tds
+          })).reverse();
+          
+          setChartData(formattedChart);
+        }
+      } catch (error) {
+        console.error("Error fetching telemetry:", error);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const lineData = [
-    { time: 'Sen', ph: 6.1, tds: 820 },
-    { time: 'Sel', ph: 6.3, tds: 840 },
-    { time: 'Rab', ph: 6.2, tds: 835 },
-    { time: 'Kam', ph: 6.4, tds: 850 },
-    { time: 'Jum', ph: 6.2, tds: 840 },
-    { time: 'Sab', ph: 6.5, tds: 860 },
-    { time: 'Min', ph: 6.2, tds: 840 },
-  ];
+  // Simulasi Toast Notification saat pertama render
+  useEffect(() => {
+    setTimeout(() => setShowToast(true), 1500);
+    setTimeout(() => setShowToast(false), 6500);
+  }, []);
 
-  const barData = [
-    { name: 'Mg1', actual: 12.4, target: 14.0 },
-    { name: 'Mg2', actual: 13.1, target: 14.0 },
-    { name: 'Mg3', actual: 12.8, target: 14.0 },
-  ];
-
-  if (!isClient) return null;
+  const isRunning = data.status !== 'STANDBY';
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] p-8 ml-64">
-      {/* Header */}
-      <div className="flex justify-between items-end mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Overview Kinerja</h1>
-          <p className="text-slate-500 mt-1">Sistem Hidroponik Zona A</p>
-        </div>
-        <div className="flex bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-          {['24 Jam', '7 Hari', '30 Hari'].map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                timeRange === range 
-                ? 'bg-emerald-500 text-white shadow-md' 
-                : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <StatCard 
-          label="RATA-RATA PH" 
-          value="6.2" 
-          unit="pH" 
-          status="Optimal (±0.1 var)" 
-          icon={<FlaskConical size={20} />}
-          color="emerald"
-        />
-        <StatCard 
-          label="RATA-RATA TDS" 
-          value="840" 
-          unit="ppm" 
-          status="Stabil" 
-          icon={<Droplets size={20} />}
-          color="blue"
-        />
-        <StatCard 
-          label="KONSUMSI NUTRISI" 
-          value="12.4" 
-          unit="L" 
-          status="+2% vs Minggu Lalu" 
-          icon={<TrendingUp size={20} />}
-          color="slate"
-        />
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Chart Section */}
-        <div className="col-span-2 bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="font-bold text-lg text-slate-800">Tren Parameter Historis</h3>
-            <button className="text-slate-400 hover:text-slate-600">•••</button>
+    <div className="bg-[#f7f9fb] text-[#191c1e] font-sans min-h-screen flex antialiased">
+      
+      {/* SIDEBAR */}
+      <aside className="flex flex-col h-screen w-64 border-r border-[#bbcabf]/30 bg-[#f7f9fb] shrink-0 sticky top-0 hidden lg:flex">
+        <div className="px-6 py-8">
+          <div className="text-xl font-bold text-[#10b981] tracking-tight">AeroGrow Pro</div>
+          <div className="text-[#3c4a42] text-[10px] font-semibold tracking-wider mt-1 uppercase opacity-70">
+            Precision DFT Telemetry
           </div>
-          <div className="h-[350px] w-full">
+        </div>
+        
+        <nav className="flex-1 px-4 mt-4 space-y-2 overflow-y-auto">
+          <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" />
+          <SidebarItem icon={<BarChart2 size={20} />} label="Analytics" active />
+          <SidebarItem icon={<Sliders size={20} />} label="Command Center" />
+          <SidebarItem icon={<BookOpen size={20} />} label="Growth Log" />
+          <SidebarItem icon={<Activity size={20} />} label="System Health" />
+        </nav>
+        
+        <div className="p-4 border-t border-[#bbcabf]/30">
+          <SidebarItem icon={<Settings size={20} />} label="Settings" />
+          <SidebarItem icon={<HelpCircle size={20} />} label="Support" />
+          
+          <div className="mt-6 flex items-center gap-4 px-4 pb-4">
+            <div className="w-10 h-10 rounded-full bg-[#10b981] flex items-center justify-center text-white font-bold">
+              YP
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider">Admin</div>
+              <div className="text-[10px] text-[#3c4a42]">Zona A Operator</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col min-h-screen overflow-y-auto bg-[#f7f9fb] p-6 md:p-10 space-y-8">
+        
+        {/* HEADER */}
+        <header className="flex justify-between items-end w-full">
+          <div>
+            <h1 className="text-3xl font-bold text-[#191c1e] tracking-tight">Overview Kinerja</h1>
+            <p className="text-[#3c4a42] text-sm mt-1">Sistem Hidroponik Zona A — Laporan Analitik Real-time</p>
+          </div>
+          <div className="hidden md:flex items-center gap-2 bg-white p-1 rounded-full shadow-sm border border-[#bbcabf]/30">
+            <button className="px-4 py-1.5 rounded-full text-xs font-semibold text-[#3c4a42] hover:bg-[#eceef0] transition-colors">24 Jam</button>
+            <button className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#10b981] text-white shadow-sm">7 Hari</button>
+            <button className="px-4 py-1.5 rounded-full text-xs font-semibold text-[#3c4a42] hover:bg-[#eceef0] transition-colors">30 Hari</button>
+          </div>
+        </header>
+
+        {/* METRICS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col gap-4 border border-[#bbcabf]/20">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider">Rata-Rata pH</span>
+              <div className="w-8 h-8 rounded-lg bg-[#10b981]/10 flex items-center justify-center text-[#10b981]">
+                <FlaskConical size={18} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-[#10b981] tracking-tight">{data.ph > 0 ? data.ph.toFixed(1) : '6.2'}</span>
+              <span className="text-sm text-[#3c4a42]">Target: 6.0 - 6.5</span>
+            </div>
+            <div className="h-1.5 w-full bg-[#eceef0] rounded-full overflow-hidden">
+              <div className="h-full bg-[#10b981] w-[92%]"></div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col gap-4 border border-[#bbcabf]/20">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider">Rata-Rata TDS</span>
+              <div className="w-8 h-8 rounded-lg bg-[#565e74]/10 flex items-center justify-center text-[#565e74]">
+                <Droplets size={18} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-[#191c1e] tracking-tight">{data.tds > 0 ? data.tds : '840'}</span>
+              <span className="text-sm text-[#3c4a42]">ppm</span>
+            </div>
+            <div className="flex items-center text-[#10b981] text-xs font-bold gap-1">
+              <TrendingUp size={14} />
+              <span>+2.4% vs minggu lalu</span>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col gap-4 border border-[#bbcabf]/20">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider">Konsumsi Nutrisi</span>
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                <Box size={18} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-[#191c1e] tracking-tight">12.4</span>
+              <span className="text-sm text-[#3c4a42]">Liter</span>
+            </div>
+            <div className="text-[#3c4a42] text-sm font-medium">Estimasi habis: 5 hari</div>
+          </div>
+        </div>
+
+        {/* CHART SECTION */}
+        <section className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-[#bbcabf]/10">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-[#191c1e]">Tren Parameter Historis</h3>
+              <p className="text-sm text-[#3c4a42] mt-1">Fluktuasi TDS (Total Dissolved Solids) dan pH - 7 Hari Terakhir</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
+                <span className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider">pH</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#cbd5e1]"></span>
+                <span className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider">TDS</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={lineData}>
+              <AreaChart data={chartData.length > 0 ? chartData : defaultChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPh" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#94a3b8', fontSize: 12}} 
-                  dy={10}
-                />
-                <YAxis hide domain={[600, 1000]} />
-                <Tooltip 
-                  contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="tds" 
-                  stroke="#10b981" 
-                  strokeWidth={4}
-                  fillOpacity={1} 
-                  fill="url(#colorPh)" 
-                />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eceef0" />
+                <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#565e74'}} tickMargin={12} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#565e74'}} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#565e74'}} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} />
+                <Area yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
+                <Area yAxisId="right" type="monotone" dataKey="TDS" stroke="#cbd5e1" strokeWidth={2} fillOpacity={0} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </section>
 
-        {/* Efficiency Chart */}
-        <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-          <h3 className="font-bold text-lg text-slate-800 mb-8">Efisiensi Nutrisi</h3>
-          <div className="h-[200px] w-full mb-8">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <Bar dataKey="actual" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-                <Bar dataKey="target" fill="#f1f5f9" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-slate-400 font-medium">
-                <div className="w-2 h-2 rounded-full bg-slate-200" />
-                Target Konsumsi
-              </div>
-              <span className="font-bold text-slate-700">14.0 L</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-emerald-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                Aktual
-              </div>
-              <span className="font-bold text-slate-700">12.4 L</span>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Insights Section */}
-        <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <Sparkles size={20} />
-              </div>
-              <h3 className="font-bold text-lg text-slate-800">Sistem Wawasan (AI)</h3>
-            </div>
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full border border-emerald-100">
-              ANALISIS BERHASIL
-            </span>
-          </div>
+        {/* BOTTOM ROW BENTO */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          <div className="space-y-6">
-            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-4">
-              <div className="p-2 bg-blue-100 text-blue-600 rounded-xl h-fit">
-                <Lightbulb size={18} />
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#bbcabf]/20">
+            <h4 className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider mb-6">Efisiensi Nutrisi</h4>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Senyawa A</span>
+                  <span className="font-medium text-[#3c4a42]">92%</span>
+                </div>
+                <div className="h-2 w-full bg-[#eceef0] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#10b981] w-[92%]"></div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-blue-900">Tip AI: Optimasi pH</p>
-                <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-                  Menurunkan suhu air sebesar 1-2°C di siang hari dapat membantu menstabilkan pH tanpa penambahan larutan asam.
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Senyawa B</span>
+                  <span className="font-medium text-[#3c4a42]">78%</span>
+                </div>
+                <div className="h-2 w-full bg-[#eceef0] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#565e74] w-[78%]"></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Mikro Nutrisi</span>
+                  <span className="font-medium text-[#3c4a42]">96%</span>
+                </div>
+                <div className="h-2 w-full bg-[#eceef0] rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 w-[96%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#10b981]/5 p-6 rounded-2xl shadow-sm border border-[#10b981]/20 relative overflow-hidden group">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#10b981]/10 rounded-full blur-3xl group-hover:scale-125 transition-transform"></div>
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-[#10b981]" />
+              <h4 className="text-lg font-bold text-[#10b981]">Sistem Wawasan (AI)</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-white/80 p-4 rounded-xl border border-[#10b981]/10 backdrop-blur-sm">
+                <span className="text-[10px] font-bold text-[#10b981] bg-[#10b981]/10 px-2 py-1 rounded uppercase">Tip AI: Optimasi pH</span>
+                <p className="text-sm mt-2 text-[#191c1e] leading-relaxed">
+                  Mendeteksi tren penurunan pH di pagi hari. Disarankan menaikkan aerasi 10% selama jam 06:00 - 08:00 untuk menstabilkan level CO2.
+                </p>
+              </div>
+              <div className="bg-white/80 p-4 rounded-xl border border-[#10b981]/10 backdrop-blur-sm">
+                <p className="text-sm text-[#191c1e] leading-relaxed">
+                  Pertumbuhan Bayam Hijau 5% lebih cepat dari siklus sebelumnya. Waktu panen diprediksi dalam 4 hari ke depan.
                 </p>
               </div>
             </div>
-            
-            <InsightItem 
-              type="warning" 
-              title="pH cenderung naik di siang hari" 
-              desc="Suhu ruangan mencapai 28°C pada pukul 12:00-14:00, menyebabkan fluktuasi pH minor."
-              source="SENSOR PH-01"
-            />
-            <InsightItem 
-              type="success" 
-              title="Serapan Nutrisi Stabil" 
-              desc="Rasio TDS berbanding volume air menunjukkan serapan akar pada tingkat optimal 92%."
-              source="KALKULASI TDS"
-            />
           </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#bbcabf]/20 overflow-hidden">
+            <h4 className="text-[10px] font-bold text-[#3c4a42] uppercase tracking-wider mb-6">Perbandingan Siklus</h4>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="border-b border-[#eceef0]">
+                  <tr className="text-[10px] font-bold text-[#3c4a42]/60 uppercase tracking-wider">
+                    <th className="pb-3">Siklus</th>
+                    <th className="pb-3 text-center">Durasi</th>
+                    <th className="pb-3 text-right">Yield</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-[#191c1e]">
+                  <tr className="border-b border-[#eceef0]/50">
+                    <td className="py-4 font-medium">Batch 14 (Aktual)</td>
+                    <td className="py-4 text-center">{data.usia > 0 ? `${data.usia} Hari` : '18 Hari'}</td>
+                    <td className="py-4 text-right font-bold text-[#10b981]">—</td>
+                  </tr>
+                  <tr className="border-b border-[#eceef0]/50">
+                    <td className="py-4 font-medium">Batch 13</td>
+                    <td className="py-4 text-center">22 Hari</td>
+                    <td className="py-4 text-right">4.2kg</td>
+                  </tr>
+                  <tr className="opacity-60">
+                    <td className="py-4 font-medium">Batch 12</td>
+                    <td className="py-4 text-center">24 Hari</td>
+                    <td className="py-4 text-right">3.8kg</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
-        {/* Growth Comparison Table */}
-        <div className="col-span-2 bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm">
-          <h3 className="font-bold text-lg text-slate-800 mb-6">Perbandingan Siklus Pertumbuhan</h3>
-          <table className="w-full">
-            <thead>
-              <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
-                <th className="text-left pb-4 font-bold">Siklus</th>
-                <th className="text-left pb-4 font-bold">Hari Ke-</th>
-                <th className="text-left pb-4 font-bold">TDS Rata-rata</th>
-                <th className="text-left pb-4 font-bold">Est. Panen</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm font-medium">
-              <tr className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                <td className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-emerald-600 font-bold">Saat Ini (B-42)</span>
-                  </div>
-                </td>
-                <td className="py-4 text-slate-600">24</td>
-                <td className="py-4 text-slate-600">840 ppm</td>
-                <td className="py-4 text-slate-600">+12 Hari</td>
-              </tr>
-              <tr className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                <td className="py-4 pl-5 text-slate-500 font-bold">Panen B-41</td>
-                <td className="py-4 text-slate-500">35 (Final)</td>
-                <td className="py-4 text-slate-500">865 ppm</td>
-                <td className="py-4 text-slate-500 italic">Selesai</td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-4 pl-5 text-slate-500 font-bold">Panen B-40</td>
-                <td className="py-4 text-slate-500">34 (Final)</td>
-                <td className="py-4 text-slate-500">850 ppm</td>
-                <td className="py-4 text-slate-500 italic">Selesai</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {/* FOOTER */}
+        <footer className="flex flex-col sm:flex-row justify-between items-center py-6 border-t border-[#bbcabf]/20 gap-4">
+          <div className="text-sm text-[#3c4a42]">
+            Pembaruan terakhir: Hari ini, {data.timestamp ? new Date(data.timestamp).toLocaleTimeString('id-ID') : new Date().toLocaleTimeString('id-ID')}
+          </div>
+          <div className="flex gap-4">
+            <button className="flex items-center gap-2 px-6 py-2.5 border border-[#bbcabf] rounded-full text-xs font-bold uppercase tracking-wider text-[#3c4a42] hover:bg-[#eceef0] transition-colors">
+              <Printer size={16} />
+              <span>Cetak Laporan</span>
+            </button>
+            <button className="flex items-center gap-2 px-6 py-2.5 bg-[#10b981] text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+              <Download size={16} />
+              <span>Ekspor CSV</span>
+            </button>
+          </div>
+        </footer>
+      </main>
+
+      {/* TOAST NOTIFICATION */}
+      <div className={`fixed bottom-8 right-8 bg-white/90 backdrop-blur-md border border-[#e0e3e5] px-6 py-4 rounded-xl shadow-xl flex items-center gap-3 z-50 transition-all duration-500 transform ${showToast ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'}`}>
+        <CheckCircle className="text-[#10b981] w-6 h-6" />
+        <span className="text-sm font-medium text-[#191c1e]">Data analitik terbaru telah disinkronkan.</span>
       </div>
+
     </div>
   );
 }
+
+// Komponen Pembantu
+function SidebarItem({ icon, label, active }) {
+  return (
+    <button className={`flex items-center gap-4 px-4 py-3 rounded-xl font-medium transition-colors w-full ${
+      active 
+        ? 'bg-[#10b981] text-white border-r-4 border-[#00422b]' 
+        : 'text-[#3c4a42] hover:bg-[#eceef0] hover:text-[#191c1e]'
+    }`}>
+      {icon}
+      <span className="text-sm">{label}</span>
+    </button>
+  );
+}
+
+const defaultChartData = [
+  { waktu: '00:00', pH: 0.0, TDS: 0 },
+  { waktu: '06:00', pH: 6.1, TDS: 800 },
+  { waktu: '12:00', pH: 6.3, TDS: 840 },
+  { waktu: '18:00', pH: 6.2, TDS: 820 },
+  { waktu: 'Sekarang', pH: 6.2, TDS: 840 },
+];
