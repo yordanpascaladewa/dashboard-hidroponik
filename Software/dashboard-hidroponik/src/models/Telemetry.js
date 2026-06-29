@@ -9,7 +9,6 @@ const telemetrySchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
-// Cara export yang paling aman buat Next.js App Router
 const Telemetry = mongoose.models.Telemetry || mongoose.model('Telemetry', telemetrySchema);
 
 export default Telemetry;

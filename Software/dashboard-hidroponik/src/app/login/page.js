@@ -65,7 +65,7 @@ export default function LoginPage() {
               <span className="animate-pulse">Authenticating...</span>
             ) : (
               <>
-                <span>Secure Login</span>
+                <span>Login</span>
                 <ArrowRight size={18} />
               </>
             )}

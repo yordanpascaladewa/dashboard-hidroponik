@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { 
   LayoutDashboard, BarChart2, Sliders, BookOpen, Activity, 
   Settings, HelpCircle, LogOut, Download, Bell, User, 
@@ -29,11 +31,11 @@ export default function SystemHealth() {
         </div>
         
         <nav className="flex-1 px-4 mt-2 space-y-2 overflow-y-auto">
-          <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" />
-          <SidebarItem icon={<BarChart2 size={20} />} label="Analytics" />
-          <SidebarItem icon={<Sliders size={20} />} label="Command Center" />
-          <SidebarItem icon={<BookOpen size={20} />} label="Growth Log" />
-          <SidebarItem icon={<Activity size={20} />} label="System Health" active />
+          <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" href="/dashboard" />
+          <SidebarItem icon={<BarChart2 size={20} />} label="Analytics" href="/analytics" />
+          <SidebarItem icon={<Sliders size={20} />} label="Command Center" href="/command-center" />
+          <SidebarItem icon={<BookOpen size={20} />} label="Growth Log" href="/growth-log" />
+          <SidebarItem icon={<Activity size={20} />} label="System Health" href="/system-health" />
         </nav>
         
         <div className="mt-auto flex flex-col gap-2 p-4 border-t border-[#bbcabf]/30">
@@ -41,8 +43,8 @@ export default function SystemHealth() {
             <Download size={20} />
             <span className="text-sm">Export Data</span>
           </button>
-          <SidebarItem icon={<HelpCircle size={20} />} label="Support" />
-          <SidebarItem icon={<LogOut size={20} />} label="Logout" />
+          <SidebarItem icon={<HelpCircle size={20} />} label="Support" href="#" />
+          <SidebarItem icon={<LogOut size={20} />} label="Logout" href="/login" />
         </div>
       </aside>
 
@@ -333,15 +335,21 @@ export default function SystemHealth() {
 }
 
 // Komponen Pembantu
-function SidebarItem({ icon, label, active }) {
+function SidebarItem({ icon, label, href }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+
   return (
-    <a href="#" className={`flex items-center gap-4 px-4 py-3 rounded-xl font-medium transition-colors w-full ${
-      active 
-        ? 'bg-[#10b981] text-white' 
-        : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'
-    }`}>
+    <Link 
+      href={href} 
+      className={`flex items-center gap-4 px-4 py-3 rounded-xl font-medium transition-colors w-full ${
+        active 
+          ? 'bg-[#10b981] text-white' 
+          : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'
+      }`}
+    >
       {icon}
       <span className="text-sm">{label}</span>
-    </a>
+    </Link>
   );
 }
