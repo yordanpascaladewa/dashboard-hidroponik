@@ -25,21 +25,18 @@ const String serverSettings = "https://dashboardhidroponik-mu.vercel.app/api/set
 #define I2C_SDA 32
 #define I2C_SCL 33
 
-// Pin Dosing Nutrisi
 #define PIN_RELAY_NUTRISI_A 26
 #define PIN_RELAY_NUTRISI_B 27
 #define PIN_RELAY_PH_UP     25
-
-// Pin Aktuator Tambahan
 #define PIN_RELAY_PUMP      14
 #define PIN_RELAY_LED       12
 #define PIN_RELAY_FAN       13
 
-// Pin Input Sensor & Encoder
 #define PIN_ENCODER_CLK 18
 #define PIN_ENCODER_DT  19
 #define PIN_ENCODER_SW  23
 #define PIN_SUHU_DS18B20 5
+#define PIN_ANALOG_PH   34 
 
 // ==========================================
 // 2. INISIALISASI OBJEK & KALIBRASI
@@ -61,7 +58,9 @@ void kelolaWaktuDanUsia();
 void kirimDataKeWeb();
 void ambilKomandoWeb(); 
 void sesuaikanTargetNutrisi(); 
-void kirimSettingsKeWeb(); // Prototype baru untuk sinkronisasi balik dari Alat ke Web
+void kirimSettingsKeWeb();
+
+TaskHandle_t TaskWeb; 
 
 // State & UI Menu
 enum MenuState { MONITOR, PILIH_TANAMAN, SET_USIA };
@@ -74,10 +73,12 @@ String daftarTanaman[] = {"SELADA", "PAKCOY", "BAYAM", "KANGKUNG"};
 int jumlahTanaman = 4;
 int indeksTanaman = 0;
 
-// Variabel Kontrol
+// Variabel Kontrol 
 String stringTanamanAktif = "SELADA"; 
-int targetHariWeb = 30;
-bool webDoserActive = false; 
+volatile int targetHariWeb = 30;      
+volatile bool webDoserActive = false; 
+volatile bool flagKirimSettings = false; 
+volatile unsigned long lastLocalSettingTime = 0; 
 
 // Variabel Waktu & Usia
 bool sudahSetTanggal = false;
@@ -94,14 +95,43 @@ float temperature = 0.0;
 float targetPH_Minimal = 6.0;
 float targetPPM_Minimal = 800.0; 
 
-// Timer
+// Timer Hardware (Core 1)
 int lastStateCLK;
 unsigned long lastButtonPress = 0;
 unsigned long lastSensorRead = 0;
 unsigned long lastLCDUpdate = 0;
 unsigned long dosingTimer = 0; 
-unsigned long lastDataSent = 0; 
-unsigned long lastSettingsGet = 0; 
+
+// ==========================================
+// TUGAS CORE 0: INTERFASE JARINGAN & SERVER
+// ==========================================
+void TaskWebcode( void * pvParameters ) {
+  unsigned long lastDataSent = 0; 
+  unsigned long lastSettingsGet = 0; 
+
+  for(;;) {
+    if (WiFi.status() == WL_CONNECTED) {
+      
+      if (millis() - lastSettingsGet > 4000) {
+        if (millis() - lastLocalSettingTime > 8000) { 
+          ambilKomandoWeb(); // Aman, tidak ada lagi akses LCD di dalam fungsi ini
+        }
+        lastSettingsGet = millis();
+      }
+
+      if (sudahSetTanggal && (millis() - lastDataSent > 2000)) {
+        kirimDataKeWeb();
+        lastDataSent = millis();
+      }
+
+      if (flagKirimSettings) {
+        kirimSettingsKeWeb();
+        flagKirimSettings = false; 
+      }
+    }
+    vTaskDelay(150 / portTICK_PERIOD_MS); 
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -125,6 +155,10 @@ void setup() {
   ads.begin(0x48); 
   rtc.begin();
   sensorSuhu.begin();
+
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+  pinMode(PIN_ANALOG_PH, INPUT);
 
   pinMode(PIN_RELAY_NUTRISI_A, OUTPUT);
   pinMode(PIN_RELAY_NUTRISI_B, OUTPUT);
@@ -159,17 +193,21 @@ void setup() {
     currentState = MONITOR;
     currentSystemState = RUNNING_NORMAL;
     lcd.clear();
+    delay(10); // Memberi nafas pada chip LCD
   } else {
     currentState = PILIH_TANAMAN; 
   }
 
-  ambilKomandoWeb();
+  xTaskCreatePinnedToCore(TaskWebcode, "TaskWeb", 10000, NULL, 1, &TaskWeb, 0);          
 }
 
+// ==========================================
+// TUGAS CORE 1: PROSES UTAMA HARDWARE & LOOP
+// ==========================================
 void loop() {
   bacaRotaryEncoder();
 
-  if (millis() - lastSensorRead > 1000) {
+  if (millis() - lastSensorRead > 1200) {
     bacaSemuaSensor();
     lastSensorRead = millis();
   }
@@ -180,17 +218,6 @@ void loop() {
   }
 
   kelolaWaktuDanUsia();
-
-  if (sudahSetTanggal && (millis() - lastDataSent > 2000)) {
-    kirimDataKeWeb();
-    lastDataSent = millis();
-  }
-
-  // Tarik perubahan komando dari web secara berkala
-  if (millis() - lastSettingsGet > 5000) {
-    ambilKomandoWeb();
-    lastSettingsGet = millis();
-  }
 
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
@@ -237,7 +264,7 @@ void loop() {
       case TDS_INJECT_B:
         if (millis() - dosingTimer >= 2000) {
           digitalWrite(PIN_RELAY_NUTRISI_B, HIGH); 
-          currentSystemState = TUNGGU_REAKSI;
+          currentSystemState = TUNGGU_REAKSI; 
           dosingTimer = millis();
         }
         break;
@@ -290,9 +317,15 @@ void bacaSemuaSensor() {
   sensorSuhu.requestTemperatures();
   temperature = sensorSuhu.getTempCByIndex(0);
 
-  int16_t adc_ph = ads.readADC_SingleEnded(1);
-  float voltage_ph = ads.computeVolts(adc_ph);
-  currentPH = (-6.33 * voltage_ph) + 23.00;
+  unsigned long total_adc = 0;
+  for (int i = 0; i < 60; i++) {
+    total_adc += analogRead(PIN_ANALOG_PH);
+    delayMicroseconds(150); 
+  }
+  float rerata_adc_ph = total_adc / 60.0;
+  float voltage_ph = (rerata_adc_ph * 3.3) / 4095.0; 
+
+  currentPH = (-5.70 * voltage_ph) + 21.20; 
   if (currentPH < 0.0) currentPH = 0.0;
   if (currentPH > 14.0) currentPH = 14.0;
 
@@ -313,9 +346,7 @@ void kelolaWaktuDanUsia() {
       memoriAlat.putInt("haricek", hariTerakhirDicek);
       
       sesuaikanTargetNutrisi();
-      
-      // Kirim update ke web saat bertambah hari agar info "Fase Tumbuh" di dashboard sinkron
-      kirimSettingsKeWeb();
+      flagKirimSettings = true; 
     }
   }
 }
@@ -323,30 +354,34 @@ void kelolaWaktuDanUsia() {
 void perbaruiTampilanLCD() {
   switch (currentState) {
     case MONITOR:
-      lcd.setCursor(0, 0); lcd.print("PLANT:" + stringTanamanAktif + "          ");
-      
-      lcd.setCursor(0, 1);
-      if (sudahSetTanggal) {
-        String teksUmur = "UMUR:" + String(usiaAktual) + "/" + String(targetHariWeb);
-        while(teksUmur.length() < 13) teksUmur += " "; 
-        lcd.print(teksUmur); 
-      } else {
-        lcd.print("UMUR:[STBY]  ");
-      }
-      
-      lcd.setCursor(13, 1); 
-      lcd.print(String(temperature, 1) + char(223) + "C   ");
+      {
+        String teksBaris1 = "PLANT:" + stringTanamanAktif;
+        while(teksBaris1.length() < 20) teksBaris1 += " ";
+        lcd.setCursor(0, 0); lcd.print(teksBaris1.substring(0, 20));
+        
+        lcd.setCursor(0, 1);
+        if (sudahSetTanggal) {
+          String teksUmur = "UMUR:" + String(usiaAktual) + "/" + String(targetHariWeb);
+          while(teksUmur.length() < 13) teksUmur += " "; 
+          lcd.print(teksUmur.substring(0, 13)); 
+        } else {
+          lcd.print("UMUR:[STBY]  ");
+        }
+        
+        lcd.setCursor(13, 1); 
+        lcd.print(String(temperature, 1) + char(223) + "C   ");
 
-      lcd.setCursor(0, 2); lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
-      lcd.setCursor(0, 3);
-      if (!sudahSetTanggal)                          lcd.print("STAT: STANDBY WAIT  ");
-      else if (!webDoserActive)                      lcd.print("STAT: DOSER OFFLINE ");
-      else if (currentSystemState == PH_UP_INJECT)   lcd.print("STAT: INJECT pH UP  ");
-      else if (currentSystemState == TDS_INJECT_A)   lcd.print("STAT: INJECT NUT. A ");
-      else if (currentSystemState == TDS_INJECT_B)   lcd.print("STAT: INJECT NUT. B ");
-      else if (currentSystemState == TDS_JEDA)       lcd.print("STAT: JEDA A KE B   ");
-      else if (currentSystemState == TUNGGU_REAKSI)  lcd.print("STAT: MIXING WATER  ");
-      else lcd.print("STAT: RUNNING NORMAL");
+        lcd.setCursor(0, 2); lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
+        lcd.setCursor(0, 3);
+        if (!sudahSetTanggal)                          lcd.print("STAT: STANDBY WAIT  ");
+        else if (!webDoserActive)                      lcd.print("STAT: DOSER OFFLINE ");
+        else if (currentSystemState == PH_UP_INJECT)   lcd.print("STAT: INJECT pH UP  ");
+        else if (currentSystemState == TDS_INJECT_A)   lcd.print("STAT: INJECT NUT. A ");
+        else if (currentSystemState == TDS_INJECT_B)   lcd.print("STAT: INJECT NUT. B ");
+        else if (currentSystemState == TDS_JEDA)       lcd.print("STAT: JEDA A KE B   ");
+        else if (currentSystemState == TUNGGU_REAKSI)  lcd.print("STAT: MIXING WATER  ");
+        else lcd.print("STAT: RUNNING NORMAL");
+      }
       break;
 
     case PILIH_TANAMAN:
@@ -392,11 +427,13 @@ void bacaRotaryEncoder() {
         currentState = PILIH_TANAMAN;
         memoriAlat.putBool("set", false); 
         lcd.clear(); 
+        delay(10); // Memberi nafas pada chip LCD sebelum ditimpa UI baru
       } 
       else if (currentState == PILIH_TANAMAN) { 
         stringTanamanAktif = daftarTanaman[indeksTanaman];
         currentState = SET_USIA; 
         lcd.clear(); 
+        delay(10);
       } 
       else if (currentState == SET_USIA) {
         usiaAktual = usiaAwalBibit;
@@ -414,9 +451,10 @@ void bacaRotaryEncoder() {
         memoriAlat.putString("namatanaman", stringTanamanAktif);
         
         lcd.clear();
-
-        // MENGIRIM PERUBAHAN ENCODER KEMBALI KE WEBSITE
-        kirimSettingsKeWeb();
+        delay(10);
+        
+        lastLocalSettingTime = millis(); 
+        flagKirimSettings = true; 
       }
       lastButtonPress = millis();
     }
@@ -424,35 +462,30 @@ void bacaRotaryEncoder() {
 }
 
 void kirimDataKeWeb() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure(); 
-    HTTPClient http;
-    http.begin(client, serverName);
-    http.addHeader("Content-Type", "application/json");
+  WiFiClientSecure client;
+  client.setInsecure(); 
+  HTTPClient http;
+  http.begin(client, serverName);
+  http.addHeader("Content-Type", "application/json");
 
-    String statusString = "RUNNING_NORMAL";
-    if (!webDoserActive) statusString = "DOSER_OFFLINE";
-    else if (currentSystemState == PH_UP_INJECT) statusString = "PH_UP_INJECT";
-    else if (currentSystemState == TDS_INJECT_A) statusString = "TDS_INJECT_A";
-    else if (currentSystemState == TDS_INJECT_B) statusString = "TDS_INJECT_B";
-    else if (currentSystemState == TDS_JEDA) statusString = "TDS_JEDA";
-    else if (currentSystemState == TUNGGU_REAKSI) statusString = "TUNGGU_REAKSI";
+  String statusString = "RUNNING_NORMAL";
+  if (!webDoserActive) statusString = "DOSER_OFFLINE";
+  else if (currentSystemState == PH_UP_INJECT) statusString = "PH_UP_INJECT";
+  else if (currentSystemState == TDS_INJECT_A) statusString = "TDS_INJECT_A";
+  else if (currentSystemState == TDS_INJECT_B) statusString = "TDS_INJECT_B";
+  else if (currentSystemState == TDS_JEDA) statusString = "TDS_JEDA";
+  else if (currentSystemState == TUNGGU_REAKSI) statusString = "TUNGGU_REAKSI";
 
-    String httpRequestData = "{\"suhu\":" + String(temperature, 1) + 
+  String httpRequestData = "{\"suhu\":" + String(temperature, 1) + 
                              ",\"ph\":" + String(currentPH, 2) + 
                              ",\"tds\":" + String(currentPPM, 0) + 
                              ",\"usia\":" + String(usiaAktual) +
                              ",\"status\":\"" + statusString + "\"}";
 
-    int httpResponseCode = http.POST(httpRequestData);
-    http.end();
-  }
+  http.POST(httpRequestData);
+  http.end();
 }
 
-// ==========================================
-// FUNGSI: TARIK KOMANDO DARI VERCEL (GET)
-// ==========================================
 void ambilKomandoWeb() {
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
@@ -473,8 +506,8 @@ void ambilKomandoWeb() {
           int hariBaru = doc["targetHari"].as<int>();
           if (hariBaru != targetHariWeb && hariBaru > 0) {
             targetHariWeb = hariBaru;
-            memoriAlat.putInt("targetHari", targetHariWeb);
-            lcd.clear(); 
+            memoriAlat.putInt("targetHari", (int)targetHariWeb);
+            // lcd.clear(); --> SUDAH DIHAPUS PERMANEN DARI CORE 0
           }
         }
 
@@ -496,7 +529,7 @@ void ambilKomandoWeb() {
             memoriAlat.putBool("set", true);
             memoriAlat.putString("namatanaman", stringTanamanAktif);
             memoriAlat.putInt("tanaman", indeksTanaman);
-            lcd.clear();
+            // lcd.clear(); --> SUDAH DIHAPUS PERMANEN DARI CORE 0
           }
         }
 
@@ -517,9 +550,6 @@ void ambilKomandoWeb() {
   }
 }
 
-// ==========================================
-// FUNGSI BARU: PUSH DATA SETTING KE VERCEL (POST)
-// ==========================================
 void kirimSettingsKeWeb() {
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
@@ -529,17 +559,10 @@ void kirimSettingsKeWeb() {
     http.begin(client, serverSettings);
     http.addHeader("Content-Type", "application/json");
 
-    // Format payload JSON untuk memperbarui target di MongoDB
     String jsonPayload = "{\"targetTanaman\":\"" + stringTanamanAktif + 
                          "\",\"targetHari\":" + String(targetHariWeb) + "}";
 
-    int httpResponseCode = http.POST(jsonPayload);
-    
-    if (httpResponseCode > 0) {
-      Serial.println("Berhasil menyinkronkan data lokal ke Vercel! Code: " + String(httpResponseCode));
-    } else {
-      Serial.println("Gagal sinkronisasi ke web. Error: " + String(httpResponseCode));
-    }
+    http.POST(jsonPayload);
     http.end();
   }
 }
