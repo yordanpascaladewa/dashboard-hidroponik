@@ -16,24 +16,19 @@ export default function AeroGrowDashboard() {
   const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
   
-  // State untuk Pusat Kendali
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [targetHari, setTargetHari] = useState(30); 
   const [isSyncing, setIsSyncing] = useState(false);
-  
-  // State untuk kontrol menu HP
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Parameter target disesuaikan presisi dengan batas minimal pada main.cpp hardware
   const plantTargets = {
     SELADA: { ph: "6.0 - 6.5", tds: "800 - 1200 PPM" },
     PAKCOY: { ph: "6.5 - 7.0", tds: "1050 - 1400 PPM" },
-    BAYAM: { ph: "6.2 - 7.0", tds: "1260 - 1540 PPM" },    // Batas bawah pH disesuaikan ke 6.2 sesuai main.cpp
-    KANGKUNG: { ph: "6.0 - 6.5", tds: "1000 - 1200 PPM" }   // Batas bawah pH disesuaikan ke 6.0 sesuai main.cpp
+    BAYAM: { ph: "6.2 - 7.0", tds: "1260 - 1540 PPM" },
+    KANGKUNG: { ph: "6.0 - 6.5", tds: "1000 - 1200 PPM" }
   };
 
   useEffect(() => {
-    // Polling data Telemetri real-time dari sensor
     const fetchTelemetry = async () => {
       try {
         const response = await fetch('/api/telemetry');
@@ -42,7 +37,8 @@ export default function AeroGrowDashboard() {
         if (result.data && result.data.length > 0) {
           setData(result.data[0]);
           const formattedChart = result.data.map(item => ({
-            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            // GUA TAMBAHIN DETIK DISINI BIAR GRAFIKNYA NGGAK NUMPUK
+            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             pH: item.ph,
             TDS: item.tds
           })).reverse();
@@ -53,7 +49,6 @@ export default function AeroGrowDashboard() {
       }
     };
 
-    // Ambil konfigurasi terakhir yang ada di database saat web pertama dimuat
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/settings');
@@ -86,7 +81,6 @@ export default function AeroGrowDashboard() {
     }
   };
 
-  // Validasi input usia agar tidak melewati ambang batas maksimal 40 hari
   const handleHariChange = (e) => {
     let val = parseInt(e.target.value);
     if (val > 40) val = 40;
@@ -99,7 +93,6 @@ export default function AeroGrowDashboard() {
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] min-h-screen flex antialiased">
       
-      {/* Overlay background saat sidebar mobile aktif */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-[#191c1e]/50 backdrop-blur-sm z-40 lg:hidden"
@@ -107,7 +100,6 @@ export default function AeroGrowDashboard() {
         />
       )}
 
-      {/* SIDEBAR COMPONENT */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#f7f9fb] border-r border-[#bbcabf]/30 flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
         
         <button 
@@ -145,7 +137,6 @@ export default function AeroGrowDashboard() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT CANVAS */}
       <main className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-260px)]">
         
         <header className="bg-[#f7f9fb] pt-6 pb-4 flex justify-between items-center px-4 md:px-10 w-full sticky top-0 z-30 border-b border-[#bbcabf]/30 lg:border-none lg:pt-8">
@@ -215,8 +206,26 @@ export default function AeroGrowDashboard() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e3e5" />
                     <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} tickMargin={12} />
-                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
-                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
+                    
+                    {/* GUA LOCK DOMAIN SUMBU Y DISINI BIAR GAK AUTO-SCALE ANEH */}
+                    <YAxis 
+                      yAxisId="left" 
+                      domain={[0, 14]} 
+                      ticks={[0, 3, 6, 9, 12, 14]} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: '#565e74'}} 
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right" 
+                      domain={[0, 2000]} 
+                      ticks={[0, 500, 1000, 1500, 2000]} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 10, fill: '#565e74'}} 
+                    />
+                    
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '12px' }} />
                     <Area yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
                     <Area yAxisId="right" type="monotone" dataKey="TDS" stroke="#cbd5e1" strokeWidth={2} fillOpacity={0} />
@@ -226,7 +235,6 @@ export default function AeroGrowDashboard() {
             </div>
           </div>
 
-          {/* SIDE CONFIG PANEL */}
           <div className="xl:col-span-4 flex flex-col h-full gap-6">
             <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full">
               <div className="flex items-center gap-2 mb-6">
@@ -235,7 +243,6 @@ export default function AeroGrowDashboard() {
               </div>
               
               <div className="flex flex-col gap-5 flex-grow">
-                {/* SELECTOR VEGETASI */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">PILIH KOMODITAS</label>
                   <div className="relative mt-1">
@@ -244,10 +251,10 @@ export default function AeroGrowDashboard() {
                       onChange={(e) => setTargetTanaman(e.target.value)}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
                     >
-                      <option value="SELADA">Selada</option>
-                      <option value="PAKCOY">Pakcoy</option>
-                      <option value="BAYAM">Bayam</option>
-                      <option value="KANGKUNG">Kangkung</option>
+                      <option value="SELADA">Selada Air (Lettuce)</option>
+                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
+                      <option value="BAYAM">Bayam Hijau</option>
+                      <option value="KANGKUNG">Kangkung Air</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
                       <ChevronDown className="w-5 h-5" />
@@ -255,7 +262,6 @@ export default function AeroGrowDashboard() {
                   </div>
                 </div>
 
-                {/* SELECTOR TARGET HARI */}
                 <div className="flex flex-col gap-2 mt-1">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">TARGET USIA PANEN (MAKS 40)</label>
                   <div className="relative">
@@ -273,7 +279,6 @@ export default function AeroGrowDashboard() {
                   </div>
                 </div>
 
-                {/* VISUALISASI TARGET PARAMETER */}
                 <div className="bg-[#f8fafc] rounded-xl p-5 border border-[#bbcabf]/20 flex flex-col gap-5 mt-2">
                   <h3 className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider border-b border-[#bbcabf]/20 pb-3">PARAMETER IDEAL</h3>
                   <div className="flex justify-between items-center pt-1">
@@ -360,9 +365,9 @@ function MetricCard({ icon, label, value, unit, isText }) {
 }
 
 const defaultChartData = [
-  { waktu: '00:00', pH: 0.0, TDS: 0 },
-  { waktu: '06:00', pH: 0.0, TDS: 0 },
-  { waktu: '12:00', pH: 0.0, TDS: 0 },
-  { waktu: '18:00', pH: 0.0, TDS: 0 },
+  { waktu: '00:00:00', pH: 0.0, TDS: 0 },
+  { waktu: '06:00:00', pH: 0.0, TDS: 0 },
+  { waktu: '12:00:00', pH: 0.0, TDS: 0 },
+  { waktu: '18:00:00', pH: 0.0, TDS: 0 },
   { waktu: 'Sekarang', pH: 0.0, TDS: 0 },
 ];
