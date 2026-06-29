@@ -20,7 +20,7 @@ export default function AeroGrowDashboard() {
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [targetHari, setTargetHari] = useState(30); 
   
-  // State BARU untuk Indikator Status Profil yang benar-benar sedang aktif di alat
+  // State untuk Indikator Status Profil yang benar-benar sedang aktif di alat
   const [activeProfile, setActiveProfile] = useState("SELADA");
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -59,7 +59,7 @@ export default function AeroGrowDashboard() {
         const setRes = await res.json();
         if (setRes.targetTanaman) {
           setTargetTanaman(setRes.targetTanaman);
-          setActiveProfile(setRes.targetTanaman); // Simpan profil yang sedang aktif dari database
+          setActiveProfile(setRes.targetTanaman); 
         }
         if (setRes.targetHari) setTargetHari(setRes.targetHari);
       } catch (error) {
@@ -67,9 +67,16 @@ export default function AeroGrowDashboard() {
       }
     };
 
+    // Jalankan sekali saat pertama dimuat
     fetchSettings();
     fetchTelemetry();
-    const interval = setInterval(fetchTelemetry, 5000); 
+    
+    // PERBAIKAN UTAMA: Jalankan fetchSettings berkala setiap 3 detik agar web otomatis sinkron tanpa F5
+    const interval = setInterval(() => {
+      fetchTelemetry();
+      fetchSettings();
+    }, 3000); 
+
     return () => clearInterval(interval);
   }, []);
 
@@ -81,7 +88,6 @@ export default function AeroGrowDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetTanaman, targetHari }), 
       });
-      // Update profil aktif di UI bagian atas kalau sukses sinkronisasi
       setActiveProfile(targetTanaman);
       setTimeout(() => setIsSyncing(false), 1500);
     } catch (error) {
@@ -160,8 +166,6 @@ export default function AeroGrowDashboard() {
               <h1 className="text-[18px] font-bold tracking-tight sm:hidden">Telemetri DFT</h1>
               <div className="flex items-center gap-2">
                 <p className="text-[#3c4a42] text-[13px] hidden sm:block">Monitor dan kontrol nutrisi otomatis real-time.</p>
-                
-                {/* Indikator Profil Aktif untuk tampilan HP/Mobile */}
                 <div className="sm:hidden flex items-center bg-[#10b981]/10 px-2 py-0.5 rounded-md border border-[#10b981]/30">
                   <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
                     🌱 {activeProfile}
@@ -172,8 +176,6 @@ export default function AeroGrowDashboard() {
           </div>
           
           <div className="flex items-center gap-3 md:gap-6">
-            
-            {/* Indikator Profil Aktif untuk tampilan Desktop/Laptop */}
             <div className="hidden sm:flex items-center gap-2 bg-[#10b981]/10 px-4 py-2 rounded-full border border-[#10b981]/20 shadow-sm">
               <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
                 🌱 PROFIL AKTIF: {activeProfile}
@@ -277,10 +279,10 @@ export default function AeroGrowDashboard() {
                       onChange={(e) => setTargetTanaman(e.target.value)}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
                     >
-                      <option value="SELADA">Selada</option>
-                      <option value="PAKCOY">Pakcoy</option>
-                      <option value="BAYAM">Bayam</option>
-                      <option value="KANGKUNG">Kangkung</option>
+                      <option value="SELADA">Selada Air (Lettuce)</option>
+                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
+                      <option value="BAYAM">Bayam Hijau</option>
+                      <option value="KANGKUNG">Kangkung Air</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
                       <ChevronDown className="w-5 h-5" />
