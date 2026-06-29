@@ -18,21 +18,22 @@ export default function AeroGrowDashboard() {
   
   // State untuk Pusat Kendali
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
-  const [targetHari, setTargetHari] = useState(30); // Default 30 hari
+  const [targetHari, setTargetHari] = useState(30); 
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // State untuk menu HP
+  // State untuk kontrol menu HP
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Parameter target disesuaikan presisi dengan batas minimal pada main.cpp hardware
   const plantTargets = {
     SELADA: { ph: "6.0 - 6.5", tds: "800 - 1200 PPM" },
     PAKCOY: { ph: "6.5 - 7.0", tds: "1050 - 1400 PPM" },
-    BAYAM: { ph: "6.0 - 7.0", tds: "1260 - 1540 PPM" },
-    KANGKUNG: { ph: "5.5 - 6.5", tds: "1000 - 1200 PPM" }
+    BAYAM: { ph: "6.2 - 7.0", tds: "1260 - 1540 PPM" },    // Batas bawah pH disesuaikan ke 6.2 sesuai main.cpp
+    KANGKUNG: { ph: "6.0 - 6.5", tds: "1000 - 1200 PPM" }   // Batas bawah pH disesuaikan ke 6.0 sesuai main.cpp
   };
 
   useEffect(() => {
-    // Ambil data Telemetri dari sensor
+    // Polling data Telemetri real-time dari sensor
     const fetchTelemetry = async () => {
       try {
         const response = await fetch('/api/telemetry');
@@ -52,7 +53,7 @@ export default function AeroGrowDashboard() {
       }
     };
 
-    // Ambil data Settings terakhir yang tersimpan di database saat web dibuka
+    // Ambil konfigurasi terakhir yang ada di database saat web pertama dimuat
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/settings');
@@ -76,7 +77,7 @@ export default function AeroGrowDashboard() {
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetTanaman, targetHari }), // Kirim data tanaman & hari
+        body: JSON.stringify({ targetTanaman, targetHari }), 
       });
       setTimeout(() => setIsSyncing(false), 1500);
     } catch (error) {
@@ -85,7 +86,7 @@ export default function AeroGrowDashboard() {
     }
   };
 
-  // Validasi agar input hari tidak melebihi batas 40 hari
+  // Validasi input usia agar tidak melewati ambang batas maksimal 40 hari
   const handleHariChange = (e) => {
     let val = parseInt(e.target.value);
     if (val > 40) val = 40;
@@ -98,7 +99,7 @@ export default function AeroGrowDashboard() {
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] min-h-screen flex antialiased">
       
-      {/* Overlay Background gelap untuk Mobile saat sidebar terbuka */}
+      {/* Overlay background saat sidebar mobile aktif */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-[#191c1e]/50 backdrop-blur-sm z-40 lg:hidden"
@@ -106,7 +107,7 @@ export default function AeroGrowDashboard() {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR COMPONENT */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#f7f9fb] border-r border-[#bbcabf]/30 flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
         
         <button 
@@ -144,7 +145,7 @@ export default function AeroGrowDashboard() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CONTENT CANVAS */}
       <main className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-260px)]">
         
         <header className="bg-[#f7f9fb] pt-6 pb-4 flex justify-between items-center px-4 md:px-10 w-full sticky top-0 z-30 border-b border-[#bbcabf]/30 lg:border-none lg:pt-8">
@@ -225,6 +226,7 @@ export default function AeroGrowDashboard() {
             </div>
           </div>
 
+          {/* SIDE CONFIG PANEL */}
           <div className="xl:col-span-4 flex flex-col h-full gap-6">
             <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full">
               <div className="flex items-center gap-2 mb-6">
@@ -233,7 +235,7 @@ export default function AeroGrowDashboard() {
               </div>
               
               <div className="flex flex-col gap-5 flex-grow">
-                {/* SELECTOR TANAMAN */}
+                {/* SELECTOR VEGETASI */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">PILIH KOMODITAS</label>
                   <div className="relative mt-1">
@@ -242,7 +244,7 @@ export default function AeroGrowDashboard() {
                       onChange={(e) => setTargetTanaman(e.target.value)}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
                     >
-                      <option value="SELADA">Selada Air (Lettuce)</option>
+                      <option value="SELADA">Selada Air (Lettcue)</option>
                       <option value="PAKCOY">Pakcoy (Bok Choy)</option>
                       <option value="BAYAM">Bayam Hijau</option>
                       <option value="KANGKUNG">Kangkung Air</option>
@@ -253,7 +255,7 @@ export default function AeroGrowDashboard() {
                   </div>
                 </div>
 
-                {/* INPUT TARGET HARI (NEW) */}
+                {/* SELECTOR TARGET HARI */}
                 <div className="flex flex-col gap-2 mt-1">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">TARGET USIA PANEN (MAKS 40)</label>
                   <div className="relative">
@@ -271,7 +273,7 @@ export default function AeroGrowDashboard() {
                   </div>
                 </div>
 
-                {/* BENTO PARAMETER TARGET */}
+                {/* VISUALISASI TARGET PARAMETER */}
                 <div className="bg-[#f8fafc] rounded-xl p-5 border border-[#bbcabf]/20 flex flex-col gap-5 mt-2">
                   <h3 className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider border-b border-[#bbcabf]/20 pb-3">PARAMETER IDEAL</h3>
                   <div className="flex justify-between items-center pt-1">
@@ -291,7 +293,7 @@ export default function AeroGrowDashboard() {
                 </div>
               </div>
 
-              <div className="mt-auto pt-6">
+              <div className="pt-6">
                 <button 
                   onClick={handleKirimKomando}
                   disabled={isSyncing || targetHari === ''}
