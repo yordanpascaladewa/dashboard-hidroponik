@@ -251,10 +251,10 @@ export default function AeroGrowDashboard() {
                       onChange={(e) => setTargetTanaman(e.target.value)}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
                     >
-                      <option value="SELADA">Selada Air (Lettuce)</option>
-                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
-                      <option value="BAYAM">Bayam Hijau</option>
-                      <option value="KANGKUNG">Kangkung Air</option>
+                      <option value="SELADA">Selada</option>
+                      <option value="PAKCOY">Pakcoy</option>
+                      <option value="BAYAM">Bayam</option>
+                      <option value="KANGKUNG">Kangkung</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
                       <ChevronDown className="w-5 h-5" />
