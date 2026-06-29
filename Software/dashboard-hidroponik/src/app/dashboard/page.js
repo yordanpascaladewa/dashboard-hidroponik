@@ -9,22 +9,22 @@ import {
   Activity, LayoutDashboard, BarChart2, Sliders, BookOpen, 
   RefreshCw, HelpCircle, LogOut, Bell, Settings, User, 
   Thermometer, FlaskConical, Droplets, Calendar, ChevronDown, Send,
-  Menu, X 
+  Menu, X, AlertCircle // <-- Tambahan icon AlertCircle untuk status offline
 } from 'lucide-react';
 
 export default function AeroGrowDashboard() {
   const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
   
-  // State untuk Pusat Kendali (Dropdown form)
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [targetHari, setTargetHari] = useState(30); 
-  
-  // State untuk Indikator Status Profil yang benar-benar sedang aktif di alat
   const [activeProfile, setActiveProfile] = useState("SELADA");
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // STATE BARU: Untuk mendeteksi apakah ESP32 mati/offline
+  const [isOffline, setIsOffline] = useState(false);
 
   const plantTargets = {
     SELADA: { ph: "6.0 - 6.5", tds: "800 - 1200 PPM" },
@@ -40,7 +40,21 @@ export default function AeroGrowDashboard() {
         const result = await response.json();
         
         if (result.data && result.data.length > 0) {
-          setData(result.data[0]);
+          const latestData = result.data[0];
+          setData(latestData);
+          
+          // LOGIKA WATCHDOG TIMEOUT: Cek selisih waktu data terakhir dengan waktu sekarang
+          if (latestData.timestamp) {
+            const lastUpdate = new Date(latestData.timestamp).getTime();
+            const now = Date.now();
+            // Jika selisih lebih dari 15 detik, anggap ESP32 offline/mati
+            if (now - lastUpdate > 15000) {
+              setIsOffline(true);
+            } else {
+              setIsOffline(false);
+            }
+          }
+
           const formattedChart = result.data.map(item => ({
             waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             pH: item.ph,
@@ -67,11 +81,9 @@ export default function AeroGrowDashboard() {
       }
     };
 
-    // Jalankan sekali saat pertama dimuat
     fetchSettings();
     fetchTelemetry();
     
-    // PERBAIKAN UTAMA: Jalankan fetchSettings berkala setiap 3 detik agar web otomatis sinkron tanpa F5
     const interval = setInterval(() => {
       fetchTelemetry();
       fetchSettings();
@@ -81,6 +93,8 @@ export default function AeroGrowDashboard() {
   }, []);
 
   const handleKirimKomando = async () => {
+    if (isOffline) return; // Proteksi ganda agar tidak bisa kirim saat offline
+    
     setIsSyncing(true);
     try {
       await fetch('/api/settings', {
@@ -103,7 +117,8 @@ export default function AeroGrowDashboard() {
     setTargetHari(isNaN(val) ? '' : val);
   };
 
-  const isRunning = data.status !== 'STANDBY';
+  // Logika tampilan indikator sistem
+  const isRunning = data.status !== 'STANDBY' && !isOffline;
 
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] min-h-screen flex antialiased">
@@ -124,12 +139,14 @@ export default function AeroGrowDashboard() {
         </button>
 
         <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#10b981] rounded-lg flex items-center justify-center text-white shrink-0">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 transition-colors ${isOffline ? 'bg-red-500' : 'bg-[#10b981]'}`}>
             <Activity className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
             <span className="text-[16px] font-bold leading-tight">System Alpha</span>
-            <span className="text-[10px] text-[#565e74] tracking-wider font-semibold uppercase">Active Monitoring</span>
+            <span className={`text-[10px] tracking-wider font-semibold uppercase ${isOffline ? 'text-red-500' : 'text-[#565e74]'}`}>
+              {isOffline ? 'Alat Terputus' : 'Active Monitoring'}
+            </span>
           </div>
         </div>
         
@@ -182,10 +199,15 @@ export default function AeroGrowDashboard() {
               </span>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 bg-[#f8fafc] px-4 py-2 rounded-full border border-[#bbcabf]/30">
-              <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>
-              <span className="text-[10px] font-semibold text-[#565e74] uppercase tracking-wider">
-                SISTEM {data.status.replace(/_/g, ' ')}
+            {/* Indikator Status Dinamis (Bisa jadi Merah kalau Offline) */}
+            <div className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isOffline ? 'bg-red-50 border-red-200 shadow-sm' : 'bg-[#f8fafc] border-[#bbcabf]/30'}`}>
+              {isOffline ? (
+                <AlertCircle className="w-3 h-3 text-red-500" />
+              ) : (
+                <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>
+              )}
+              <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOffline ? 'text-red-600' : 'text-[#565e74]'}`}>
+                {isOffline ? 'SISTEM OFFLINE' : `SISTEM ${data.status.replace(/_/g, ' ')}`}
               </span>
             </div>
             
@@ -199,11 +221,20 @@ export default function AeroGrowDashboard() {
 
         <div className="p-4 md:p-10 md:pt-4 grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1">
           <div className="xl:col-span-8 flex flex-col gap-6">
+            
+            {/* Warning Banner kalau sistem mati */}
+            {isOffline && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm animate-in fade-in zoom-in duration-300">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p><strong>Peringatan:</strong> Alat hidroponik terputus dari server. Data di bawah ini adalah rekaman terakhir sebelum koneksi terputus.</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <MetricCard icon={<Thermometer className="w-4 h-4 text-[#565e74]" />} label="SUHU AIR" value={data.suhu.toFixed(1)} unit="°C" />
-              <MetricCard icon={<FlaskConical className="w-4 h-4 text-[#565e74]" />} label="TINGKAT PH" value={data.ph.toFixed(1)} />
-              <MetricCard icon={<Droplets className="w-4 h-4 text-[#565e74]" />} label="NUTRISI (TDS)" value={data.tds} unit="PPM" />
-              <MetricCard icon={<Calendar className="w-4 h-4 text-[#565e74]" />} label="FASE TUMBUH" value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} isText />
+              <MetricCard icon={<Thermometer className="w-4 h-4 text-[#565e74]" />} label="SUHU AIR" value={data.suhu.toFixed(1)} unit="°C" isOffline={isOffline} />
+              <MetricCard icon={<FlaskConical className="w-4 h-4 text-[#565e74]" />} label="TINGKAT PH" value={data.ph.toFixed(1)} isOffline={isOffline} />
+              <MetricCard icon={<Droplets className="w-4 h-4 text-[#565e74]" />} label="NUTRISI (TDS)" value={data.tds} unit="PPM" isOffline={isOffline} />
+              <MetricCard icon={<Calendar className="w-4 h-4 text-[#565e74]" />} label="FASE TUMBUH" value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} isText isOffline={isOffline} />
             </div>
 
             <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 md:p-6 flex-1 flex flex-col min-h-[400px]">
@@ -224,7 +255,7 @@ export default function AeroGrowDashboard() {
                 </div>
               </div>
               
-              <div className="flex-1 w-full mt-4 h-full min-h-[250px] md:min-h-[300px]">
+              <div className="flex-1 w-full mt-4 h-full min-h-[250px] md:min-h-[300px] opacity-90">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData.length > 0 ? chartData : defaultChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                     <defs>
@@ -255,7 +286,7 @@ export default function AeroGrowDashboard() {
                     />
                     
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '12px' }} />
-                    <Area yAxisId="left" type="monotone" dataKey="pH" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
+                    <Area yAxisId="left" type="monotone" dataKey="pH" stroke={isOffline ? "#94a3b8" : "#10b981"} strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
                     <Area yAxisId="right" type="monotone" dataKey="TDS" stroke="#cbd5e1" strokeWidth={2} fillOpacity={0} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -264,19 +295,21 @@ export default function AeroGrowDashboard() {
           </div>
 
           <div className="xl:col-span-4 flex flex-col h-full gap-6">
-            <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full">
+            <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full relative overflow-hidden">
+              
               <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5" />
                 <h2 className="text-[18px] font-bold">Pusat Kendali</h2>
               </div>
               
-              <div className="flex flex-col gap-5 flex-grow">
+              <div className={`flex flex-col gap-5 flex-grow transition-opacity ${isOffline ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">PILIH KOMODITAS</label>
                   <div className="relative mt-1">
                     <select 
                       value={targetTanaman}
                       onChange={(e) => setTargetTanaman(e.target.value)}
+                      disabled={isOffline}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
                     >
                       <option value="SELADA">Selada</option>
@@ -299,6 +332,7 @@ export default function AeroGrowDashboard() {
                       max="40"
                       value={targetHari}
                       onChange={handleHariChange}
+                      disabled={isOffline}
                       className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all font-medium"
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
@@ -329,14 +363,14 @@ export default function AeroGrowDashboard() {
               <div className="pt-6">
                 <button 
                   onClick={handleKirimKomando}
-                  disabled={isSyncing || targetHari === ''}
+                  disabled={isSyncing || targetHari === '' || isOffline}
                   className={`w-full text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all shadow-sm
-                    ${isSyncing || targetHari === '' ? 'bg-[#565e74] cursor-not-allowed' : 'bg-[#10b981] hover:bg-[#059669] hover:shadow-md active:scale-[0.98]'}`}
+                    ${isSyncing || targetHari === '' || isOffline ? 'bg-[#94a3b8] cursor-not-allowed' : 'bg-[#10b981] hover:bg-[#059669] hover:shadow-md active:scale-[0.98]'}`}
                 >
                   <div className={`w-4 h-4 flex items-center justify-center ${isSyncing ? 'animate-spin' : ''}`}>
-                    {isSyncing ? <RefreshCw className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    {isOffline ? <AlertCircle className="w-4 h-4" /> : (isSyncing ? <RefreshCw className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
                   </div>
-                  <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sistem'}</span>
+                  <span>{isOffline ? 'Koneksi Terputus' : (isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sistem')}</span>
                 </button>
               </div>
             </div>
@@ -375,9 +409,9 @@ function IconButton({ icon, hiddenOnMobile }) {
   );
 }
 
-function MetricCard({ icon, label, value, unit, isText }) {
+function MetricCard({ icon, label, value, unit, isText, isOffline }) {
   return (
-    <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 flex flex-col gap-1 hover:shadow-md transition-shadow">
+    <div className={`bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 flex flex-col gap-1 hover:shadow-md transition-all ${isOffline ? 'opacity-70 grayscale' : ''}`}>
       <div className="bg-[#f2f4f6] w-8 h-8 rounded-full flex items-center justify-center mb-1">
         {icon}
       </div>
