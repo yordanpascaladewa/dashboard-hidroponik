@@ -16,8 +16,13 @@ export default function AeroGrowDashboard() {
   const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
   
+  // State untuk Pusat Kendali (Dropdown form)
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
   const [targetHari, setTargetHari] = useState(30); 
+  
+  // State BARU untuk Indikator Status Profil yang benar-benar sedang aktif di alat
+  const [activeProfile, setActiveProfile] = useState("SELADA");
+
   const [isSyncing, setIsSyncing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -37,7 +42,6 @@ export default function AeroGrowDashboard() {
         if (result.data && result.data.length > 0) {
           setData(result.data[0]);
           const formattedChart = result.data.map(item => ({
-            // GUA TAMBAHIN DETIK DISINI BIAR GRAFIKNYA NGGAK NUMPUK
             waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             pH: item.ph,
             TDS: item.tds
@@ -53,7 +57,10 @@ export default function AeroGrowDashboard() {
       try {
         const res = await fetch('/api/settings');
         const setRes = await res.json();
-        if (setRes.targetTanaman) setTargetTanaman(setRes.targetTanaman);
+        if (setRes.targetTanaman) {
+          setTargetTanaman(setRes.targetTanaman);
+          setActiveProfile(setRes.targetTanaman); // Simpan profil yang sedang aktif dari database
+        }
         if (setRes.targetHari) setTargetHari(setRes.targetHari);
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -74,6 +81,8 @@ export default function AeroGrowDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetTanaman, targetHari }), 
       });
+      // Update profil aktif di UI bagian atas kalau sukses sinkronisasi
+      setActiveProfile(targetTanaman);
       setTimeout(() => setIsSyncing(false), 1500);
     } catch (error) {
       console.error("Error sending command:", error);
@@ -101,7 +110,6 @@ export default function AeroGrowDashboard() {
       )}
 
       <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#f7f9fb] border-r border-[#bbcabf]/30 flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
-        
         <button 
           onClick={() => setIsMobileMenuOpen(false)}
           className="absolute top-6 right-4 p-2 text-[#565e74] hover:bg-[#e0e3e5] rounded-xl lg:hidden"
@@ -150,16 +158,35 @@ export default function AeroGrowDashboard() {
             <div className="flex flex-col gap-1">
               <h1 className="text-[22px] font-bold tracking-tight hidden sm:block">AeroGrow Pro - Telemetri</h1>
               <h1 className="text-[18px] font-bold tracking-tight sm:hidden">Telemetri DFT</h1>
-              <p className="text-[#3c4a42] text-[13px] hidden sm:block">Monitor dan kontrol nutrisi otomatis real-time.</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[#3c4a42] text-[13px] hidden sm:block">Monitor dan kontrol nutrisi otomatis real-time.</p>
+                
+                {/* Indikator Profil Aktif untuk tampilan HP/Mobile */}
+                <div className="sm:hidden flex items-center bg-[#10b981]/10 px-2 py-0.5 rounded-md border border-[#10b981]/30">
+                  <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
+                    🌱 {activeProfile}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4 md:gap-6">
+          
+          <div className="flex items-center gap-3 md:gap-6">
+            
+            {/* Indikator Profil Aktif untuk tampilan Desktop/Laptop */}
+            <div className="hidden sm:flex items-center gap-2 bg-[#10b981]/10 px-4 py-2 rounded-full border border-[#10b981]/20 shadow-sm">
+              <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
+                🌱 PROFIL AKTIF: {activeProfile}
+              </span>
+            </div>
+
             <div className="hidden sm:flex items-center gap-2 bg-[#f8fafc] px-4 py-2 rounded-full border border-[#bbcabf]/30">
               <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>
               <span className="text-[10px] font-semibold text-[#565e74] uppercase tracking-wider">
                 SISTEM {data.status.replace(/_/g, ' ')}
               </span>
             </div>
+            
             <div className="flex items-center gap-2">
               <IconButton icon={<Bell className="w-5 h-5" />} />
               <IconButton icon={<Settings className="w-5 h-5" />} hiddenOnMobile />
@@ -207,7 +234,6 @@ export default function AeroGrowDashboard() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e3e5" />
                     <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} tickMargin={12} />
                     
-                    {/* GUA LOCK DOMAIN SUMBU Y DISINI BIAR GAK AUTO-SCALE ANEH */}
                     <YAxis 
                       yAxisId="left" 
                       domain={[0, 14]} 
