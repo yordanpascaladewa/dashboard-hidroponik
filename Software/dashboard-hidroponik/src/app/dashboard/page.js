@@ -9,21 +9,20 @@ import {
   Activity, LayoutDashboard, BarChart2, Sliders, BookOpen, 
   RefreshCw, HelpCircle, LogOut, Bell, Settings, User, 
   Thermometer, FlaskConical, Droplets, Calendar, ChevronDown, Send,
-  Menu, X, AlertCircle // <-- Tambahan icon AlertCircle untuk status offline
+  Menu, X, AlertCircle 
 } from 'lucide-react';
 
 export default function AeroGrowDashboard() {
   const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
   const [chartData, setChartData] = useState([]);
   
+  // State untuk Pusat Kendali
   const [targetTanaman, setTargetTanaman] = useState("SELADA");
-  const [targetHari, setTargetHari] = useState(30); 
+  const [umurAwal, setUmurAwal] = useState(1); // Default mulai dari hari ke-1
+  
   const [activeProfile, setActiveProfile] = useState("SELADA");
-
   const [isSyncing, setIsSyncing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // STATE BARU: Untuk mendeteksi apakah ESP32 mati/offline
   const [isOffline, setIsOffline] = useState(false);
 
   const plantTargets = {
@@ -43,11 +42,9 @@ export default function AeroGrowDashboard() {
           const latestData = result.data[0];
           setData(latestData);
           
-          // LOGIKA WATCHDOG TIMEOUT: Cek selisih waktu data terakhir dengan waktu sekarang
           if (latestData.timestamp) {
             const lastUpdate = new Date(latestData.timestamp).getTime();
             const now = Date.now();
-            // Jika selisih lebih dari 15 detik, anggap ESP32 offline/mati
             if (now - lastUpdate > 15000) {
               setIsOffline(true);
             } else {
@@ -75,7 +72,8 @@ export default function AeroGrowDashboard() {
           setTargetTanaman(setRes.targetTanaman);
           setActiveProfile(setRes.targetTanaman); 
         }
-        if (setRes.targetHari) setTargetHari(setRes.targetHari);
+        // targetHari di database sekarang kita anggap sebagai input umur awal
+        if (setRes.targetHari) setUmurAwal(setRes.targetHari);
       } catch (error) {
         console.error("Error fetching settings:", error);
       }
@@ -93,14 +91,17 @@ export default function AeroGrowDashboard() {
   }, []);
 
   const handleKirimKomando = async () => {
-    if (isOffline) return; // Proteksi ganda agar tidak bisa kirim saat offline
+    if (isOffline) return;
     
     setIsSyncing(true);
     try {
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetTanaman, targetHari }), 
+        body: JSON.stringify({ 
+          targetTanaman, 
+          targetHari: umurAwal // Mengirim umur awal ke ESP32
+        }), 
       });
       setActiveProfile(targetTanaman);
       setTimeout(() => setIsSyncing(false), 1500);
@@ -110,31 +111,25 @@ export default function AeroGrowDashboard() {
     }
   };
 
-  const handleHariChange = (e) => {
+  const handleUmurChange = (e) => {
     let val = parseInt(e.target.value);
     if (val > 40) val = 40;
     if (val < 1) val = 1;
-    setTargetHari(isNaN(val) ? '' : val);
+    setUmurAwal(isNaN(val) ? '' : val);
   };
 
-  // Logika tampilan indikator sistem
   const isRunning = data.status !== 'STANDBY' && !isOffline;
 
   return (
     <div className="bg-[#f7f9fb] text-[#191c1e] min-h-screen flex antialiased">
       
       {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-[#191c1e]/50 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
+        <div className="fixed inset-0 bg-[#191c1e]/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
+      {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#f7f9fb] border-r border-[#bbcabf]/30 flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
-        <button 
-          onClick={() => setIsMobileMenuOpen(false)}
-          className="absolute top-6 right-4 p-2 text-[#565e74] hover:bg-[#e0e3e5] rounded-xl lg:hidden"
-        >
+        <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-6 right-4 p-2 text-[#565e74] hover:bg-[#e0e3e5] rounded-xl lg:hidden">
           <X className="w-5 h-5" />
         </button>
 
@@ -172,10 +167,7 @@ export default function AeroGrowDashboard() {
         
         <header className="bg-[#f7f9fb] pt-6 pb-4 flex justify-between items-center px-4 md:px-10 w-full sticky top-0 z-30 border-b border-[#bbcabf]/30 lg:border-none lg:pt-8">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 -ml-2 text-[#3c4a42] hover:bg-[#e0e3e5] rounded-xl lg:hidden"
-            >
+            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-[#3c4a42] hover:bg-[#e0e3e5] rounded-xl lg:hidden">
               <Menu className="w-6 h-6" />
             </button>
             <div className="flex flex-col gap-1">
@@ -184,9 +176,7 @@ export default function AeroGrowDashboard() {
               <div className="flex items-center gap-2">
                 <p className="text-[#3c4a42] text-[13px] hidden sm:block">Monitor dan kontrol nutrisi otomatis real-time.</p>
                 <div className="sm:hidden flex items-center bg-[#10b981]/10 px-2 py-0.5 rounded-md border border-[#10b981]/30">
-                  <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
-                    🌱 {activeProfile}
-                  </span>
+                  <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">🌱 {activeProfile}</span>
                 </div>
               </div>
             </div>
@@ -194,18 +184,11 @@ export default function AeroGrowDashboard() {
           
           <div className="flex items-center gap-3 md:gap-6">
             <div className="hidden sm:flex items-center gap-2 bg-[#10b981]/10 px-4 py-2 rounded-full border border-[#10b981]/20 shadow-sm">
-              <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">
-                🌱 PROFIL AKTIF: {activeProfile}
-              </span>
+              <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">🌱 PROFIL AKTIF: {activeProfile}</span>
             </div>
 
-            {/* Indikator Status Dinamis (Bisa jadi Merah kalau Offline) */}
-            <div className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isOffline ? 'bg-red-50 border-red-200 shadow-sm' : 'bg-[#f8fafc] border-[#bbcabf]/30'}`}>
-              {isOffline ? (
-                <AlertCircle className="w-3 h-3 text-red-500" />
-              ) : (
-                <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>
-              )}
+            <div className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isOffline ? 'bg-red-50 border-red-200' : 'bg-[#f8fafc] border-[#bbcabf]/30'}`}>
+              {isOffline ? <AlertCircle className="w-3 h-3 text-red-500" /> : <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>}
               <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOffline ? 'text-red-600' : 'text-[#565e74]'}`}>
                 {isOffline ? 'SISTEM OFFLINE' : `SISTEM ${data.status.replace(/_/g, ' ')}`}
               </span>
@@ -222,11 +205,10 @@ export default function AeroGrowDashboard() {
         <div className="p-4 md:p-10 md:pt-4 grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1">
           <div className="xl:col-span-8 flex flex-col gap-6">
             
-            {/* Warning Banner kalau sistem mati */}
             {isOffline && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm animate-in fade-in zoom-in duration-300">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                <p><strong>Peringatan:</strong> Alat hidroponik terputus dari server. Data di bawah ini adalah rekaman terakhir sebelum koneksi terputus.</p>
+                <p><strong>Peringatan:</strong> Alat terputus. Data di bawah adalah rekaman terakhir.</p>
               </div>
             )}
 
@@ -234,7 +216,7 @@ export default function AeroGrowDashboard() {
               <MetricCard icon={<Thermometer className="w-4 h-4 text-[#565e74]" />} label="SUHU AIR" value={data.suhu.toFixed(1)} unit="°C" isOffline={isOffline} />
               <MetricCard icon={<FlaskConical className="w-4 h-4 text-[#565e74]" />} label="TINGKAT PH" value={data.ph.toFixed(1)} isOffline={isOffline} />
               <MetricCard icon={<Droplets className="w-4 h-4 text-[#565e74]" />} label="NUTRISI (TDS)" value={data.tds} unit="PPM" isOffline={isOffline} />
-              <MetricCard icon={<Calendar className="w-4 h-4 text-[#565e74]" />} label="FASE TUMBUH" value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} isText isOffline={isOffline} />
+              <MetricCard icon={<Calendar className="w-4 h-4 text-[#565e74]" />} label="USIA TANAMAN" value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} isText isOffline={isOffline} />
             </div>
 
             <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 md:p-6 flex-1 flex flex-col min-h-[400px]">
@@ -243,7 +225,7 @@ export default function AeroGrowDashboard() {
                   <h2 className="text-[16px] md:text-[18px] font-bold">Tren Kualitas Air (24 Jam)</h2>
                   <p className="text-[12px] md:text-[13px] text-[#565e74] mt-1">Korelasi pH dan konsentrasi TDS</p>
                 </div>
-                <div className="flex flex-col md:flex-row gap-2 md:gap-4">
+                <div className="flex gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-1 bg-[#10b981] rounded-full"></div>
                     <span className="text-[10px] text-[#565e74] font-bold">PH</span>
@@ -255,37 +237,19 @@ export default function AeroGrowDashboard() {
                 </div>
               </div>
               
-              <div className="flex-1 w-full mt-4 h-full min-h-[250px] md:min-h-[300px] opacity-90">
+              <div className="flex-1 w-full mt-4 h-full min-h-[250px] md:min-h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData.length > 0 ? chartData : defaultChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPh" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e3e5" />
                     <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} tickMargin={12} />
-                    
-                    <YAxis 
-                      yAxisId="left" 
-                      domain={[0, 14]} 
-                      ticks={[0, 3, 6, 9, 12, 14]} 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: '#565e74'}} 
-                    />
-                    <YAxis 
-                      yAxisId="right" 
-                      orientation="right" 
-                      domain={[0, 2000]} 
-                      ticks={[0, 500, 1000, 1500, 2000]} 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fontSize: 10, fill: '#565e74'}} 
-                    />
-                    
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '12px' }} />
+                    <YAxis yAxisId="left" domain={[0, 14]} ticks={[0, 3, 6, 9, 12, 14]} axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 2000]} ticks={[0, 500, 1000, 1500, 2000]} axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', fontSize: '12px' }} />
                     <Area yAxisId="left" type="monotone" dataKey="pH" stroke={isOffline ? "#94a3b8" : "#10b981"} strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
                     <Area yAxisId="right" type="monotone" dataKey="TDS" stroke="#cbd5e1" strokeWidth={2} fillOpacity={0} />
                   </AreaChart>
@@ -294,9 +258,9 @@ export default function AeroGrowDashboard() {
             </div>
           </div>
 
+          {/* CONTROL CENTER */}
           <div className="xl:col-span-4 flex flex-col h-full gap-6">
             <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full relative overflow-hidden">
-              
               <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5" />
                 <h2 className="text-[18px] font-bold">Pusat Kendali</h2>
@@ -306,67 +270,40 @@ export default function AeroGrowDashboard() {
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">PILIH KOMODITAS</label>
                   <div className="relative mt-1">
-                    <select 
-                      value={targetTanaman}
-                      onChange={(e) => setTargetTanaman(e.target.value)}
-                      disabled={isOffline}
-                      className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium"
-                    >
-                      <option value="SELADA">Selada</option>
-                      <option value="PAKCOY">Pakcoy</option>
-                      <option value="BAYAM">Bayam</option>
-                      <option value="KANGKUNG">Kangkung</option>
+                    <select value={targetTanaman} onChange={(e) => setTargetTanaman(e.target.value)} disabled={isOffline} className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium">
+                      <option value="SELADA">Selada Air (Lettuce)</option>
+                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
+                      <option value="BAYAM">Bayam Hijau</option>
+                      <option value="KANGKUNG">Kangkung Air</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
-                      <ChevronDown className="w-5 h-5" />
-                    </div>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]"><ChevronDown className="w-5 h-5" /></div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2 mt-1">
-                  <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">TARGET USIA PANEN (MAKS 40)</label>
+                  <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">UMUR BIBIT SAAT INI</label>
                   <div className="relative">
-                    <input 
-                      type="number"
-                      min="1"
-                      max="40"
-                      value={targetHari}
-                      onChange={handleHariChange}
-                      disabled={isOffline}
-                      className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all font-medium"
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]">
-                      <span className="text-xs font-bold tracking-wider">HARI</span>
-                    </div>
+                    <input type="number" min="1" max="40" value={umurAwal} onChange={handleUmurChange} disabled={isOffline} className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all font-medium" />
+                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]"><span className="text-xs font-bold tracking-wider">HARI</span></div>
                   </div>
+                  <p className="text-[11px] text-[#565e74] italic">*Alat akan mulai menghitung dari hari yang Anda tentukan.</p>
                 </div>
 
                 <div className="bg-[#f8fafc] rounded-xl p-5 border border-[#bbcabf]/20 flex flex-col gap-5 mt-2">
                   <h3 className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider border-b border-[#bbcabf]/20 pb-3">PARAMETER IDEAL</h3>
                   <div className="flex justify-between items-center pt-1">
-                    <div className="flex items-center gap-2 text-[#565e74]">
-                      <FlaskConical className="w-4 h-4" />
-                      <span className="text-[13px] font-medium">Target pH</span>
-                    </div>
+                    <div className="flex items-center gap-2 text-[#565e74]"><FlaskConical className="w-4 h-4" /><span className="text-[13px] font-medium">Target pH</span></div>
                     <span className="text-[13px] font-bold text-[#10b981]">{plantTargets[targetTanaman].ph}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-[#565e74]">
-                      <Droplets className="w-4 h-4" />
-                      <span className="text-[13px] font-medium">Target TDS</span>
-                    </div>
+                    <div className="flex items-center gap-2 text-[#565e74]"><Droplets className="w-4 h-4" /><span className="text-[13px] font-medium">Target TDS</span></div>
                     <span className="text-[13px] font-bold text-[#10b981]">{plantTargets[targetTanaman].tds}</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-6">
-                <button 
-                  onClick={handleKirimKomando}
-                  disabled={isSyncing || targetHari === '' || isOffline}
-                  className={`w-full text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all shadow-sm
-                    ${isSyncing || targetHari === '' || isOffline ? 'bg-[#94a3b8] cursor-not-allowed' : 'bg-[#10b981] hover:bg-[#059669] hover:shadow-md active:scale-[0.98]'}`}
-                >
+                <button onClick={handleKirimKomando} disabled={isSyncing || umurAwal === '' || isOffline} className={`w-full text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all shadow-sm ${isSyncing || umurAwal === '' || isOffline ? 'bg-[#94a3b8] cursor-not-allowed' : 'bg-[#10b981] hover:bg-[#059669] active:scale-[0.98]'}`}>
                   <div className={`w-4 h-4 flex items-center justify-center ${isSyncing ? 'animate-spin' : ''}`}>
                     {isOffline ? <AlertCircle className="w-4 h-4" /> : (isSyncing ? <RefreshCw className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
                   </div>
@@ -385,18 +322,9 @@ export default function AeroGrowDashboard() {
 function SidebarItem({ icon, label, href }) {
   const pathname = usePathname();
   const active = pathname === href;
-
   return (
-    <Link 
-      href={href} 
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors w-full ${
-        active 
-          ? 'bg-[#10b981] text-white' 
-          : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
+    <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors w-full ${active ? 'bg-[#10b981] text-white' : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'}`}>
+      {icon}<span>{label}</span>
     </Link>
   );
 }
@@ -412,24 +340,14 @@ function IconButton({ icon, hiddenOnMobile }) {
 function MetricCard({ icon, label, value, unit, isText, isOffline }) {
   return (
     <div className={`bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 flex flex-col gap-1 hover:shadow-md transition-all ${isOffline ? 'opacity-70 grayscale' : ''}`}>
-      <div className="bg-[#f2f4f6] w-8 h-8 rounded-full flex items-center justify-center mb-1">
-        {icon}
-      </div>
+      <div className="bg-[#f2f4f6] w-8 h-8 rounded-full flex items-center justify-center mb-1">{icon}</div>
       <span className="text-[10px] text-[#3c4a42] uppercase tracking-wider font-bold">{label}</span>
       <div className="mt-1 flex items-baseline gap-1">
-        <span className={`font-bold tracking-tight ${isText ? 'text-[20px] md:text-[24px]' : 'text-[28px] md:text-[32px]'}`}>
-          {value}
-        </span>
+        <span className={`font-bold tracking-tight ${isText ? 'text-[20px] md:text-[24px]' : 'text-[28px] md:text-[32px]'}`}>{value}</span>
         {unit && <span className="text-[#565e74] text-sm">{unit}</span>}
       </div>
     </div>
   );
 }
 
-const defaultChartData = [
-  { waktu: '00:00:00', pH: 0.0, TDS: 0 },
-  { waktu: '06:00:00', pH: 0.0, TDS: 0 },
-  { waktu: '12:00:00', pH: 0.0, TDS: 0 },
-  { waktu: '18:00:00', pH: 0.0, TDS: 0 },
-  { waktu: 'Sekarang', pH: 0.0, TDS: 0 },
-];
+const defaultChartData = Array.from({ length: 5 }, (_, i) => ({ waktu: '--:--:--', pH: 0, TDS: 0 }));
