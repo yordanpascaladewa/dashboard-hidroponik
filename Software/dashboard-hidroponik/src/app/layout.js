@@ -1,21 +1,28 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
+import Sidebar from './Sidebar'; // Memanggil komponen sidebar yang baru dibikin
 
-// Mengatur font bawaan (opsional, biar rapi)
 const inter = Inter({ subsets: ['latin'] });
 
-// Meta tags untuk judul web di tab browser lu
 export const metadata = {
-  title: 'AeroGrow Pro - Telemetri DFT',
-  description: 'Dashboard Sistem Fertigasi Hidroponik Otomatis Berbasis IoT',
+  title: 'AeroGrow Pro - Telemetri',
+  description: 'Sistem Fertigasi Hidroponik Otomatis',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      {/* children di sini bakal langsung nampilin isi dari page.js secara full tanpa gangguan sidebar */}
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
-        {children}
+      {/* flex digunakan untuk membagi layar jadi 2 kolom (kiri sidebar, kanan konten utama) */}
+      <body className={`${inter.className} bg-gray-50 text-gray-900 min-h-screen flex`}>
+        
+        {/* Memunculkan Sidebar di Kiri */}
+        <Sidebar />
+        
+        {/* Konten Halaman Utama di Kanan (Dashboard, Analytics, dll) */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+        
       </body>
     </html>
   );
