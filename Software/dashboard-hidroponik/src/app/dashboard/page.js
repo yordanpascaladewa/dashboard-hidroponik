@@ -1,353 +1,164 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+
+import { useState, useEffect } from 'react';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
-import Link from 'next/link';
-import { 
-  Activity, LayoutDashboard, BarChart2, Sliders, BookOpen, 
-  RefreshCw, HelpCircle, LogOut, Bell, Settings, User, 
-  Thermometer, FlaskConical, Droplets, Calendar, ChevronDown, Send,
-  Menu, X, AlertCircle 
-} from 'lucide-react';
+  FiActivity, 
+  FiAlertTriangle, 
+  FiCheckCircle, 
+  FiCpu, 
+  FiRefreshCw, 
+  FiDroplet, 
+  FiThermometer, 
+  FiCalendar 
+} from 'react-icons/fi';
 
-export default function AeroGrowDashboard() {
-  const [data, setData] = useState({ suhu: 0.0, ph: 0.0, tds: 0, usia: 0, status: "STANDBY", timestamp: null });
-  const [chartData, setChartData] = useState([]);
-  
-  // State untuk Pusat Kendali
-  const [targetTanaman, setTargetTanaman] = useState("SELADA");
-  const [umurAwal, setUmurAwal] = useState(1); // Default mulai dari hari ke-1
-  
-  const [activeProfile, setActiveProfile] = useState("SELADA");
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-
-  const plantTargets = {
-    SELADA: { ph: "6.0 - 6.5", tds: "800 - 1200 PPM" },
-    PAKCOY: { ph: "6.5 - 7.0", tds: "1050 - 1400 PPM" },
-    BAYAM: { ph: "6.2 - 7.0", tds: "1260 - 1540 PPM" },
-    KANGKUNG: { ph: "6.0 - 6.5", tds: "1000 - 1200 PPM" }
-  };
-
-  useEffect(() => {
-    const fetchTelemetry = async () => {
-      try {
-        const response = await fetch('/api/telemetry');
-        const result = await response.json();
-        
-        if (result.data && result.data.length > 0) {
-          const latestData = result.data[0];
-          setData(latestData);
-          
-          if (latestData.timestamp) {
-            const lastUpdate = new Date(latestData.timestamp).getTime();
-            const now = Date.now();
-            if (now - lastUpdate > 15000) {
-              setIsOffline(true);
-            } else {
-              setIsOffline(false);
-            }
-          }
-
-          const formattedChart = result.data.map(item => ({
-            waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            pH: item.ph,
-            TDS: item.tds
-          })).reverse();
-          setChartData(formattedChart);
-        }
-      } catch (error) {
-        console.error("Error fetching telemetry:", error);
-      }
-    };
-
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch('/api/settings');
-        const setRes = await res.json();
-        if (setRes.targetTanaman) {
-          setTargetTanaman(setRes.targetTanaman);
-          setActiveProfile(setRes.targetTanaman); 
-        }
-        // targetHari di database sekarang kita anggap sebagai input umur awal
-        if (setRes.targetHari) setUmurAwal(setRes.targetHari);
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-      }
-    };
-
-    fetchSettings();
-    fetchTelemetry();
-    
-    const interval = setInterval(() => {
-      fetchTelemetry();
-      fetchSettings();
-    }, 3000); 
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleKirimKomando = async () => {
-    if (isOffline) return;
-    
-    setIsSyncing(true);
-    try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          targetTanaman, 
-          targetHari: umurAwal // Mengirim umur awal ke ESP32
-        }), 
-      });
-      setActiveProfile(targetTanaman);
-      setTimeout(() => setIsSyncing(false), 1500);
-    } catch (error) {
-      console.error("Error sending command:", error);
-      setIsSyncing(false);
-    }
-  };
-
-  const handleUmurChange = (e) => {
-    let val = parseInt(e.target.value);
-    if (val > 40) val = 40;
-    if (val < 1) val = 1;
-    setUmurAwal(isNaN(val) ? '' : val);
-  };
-
-  const isRunning = data.status !== 'STANDBY' && !isOffline;
+export default function DashboardPage() {
+  const [isOnline, setIsOnline] = useState(true);
+  const [sensorData, setSensorData] = useState({
+    tds_ppm: 1152,
+    ph_air: 5.6,
+    suhu_air: 28.4,
+    fase_tumbuh: 'Hari 15 (Vegetatif)',
+    komoditas_aktif: 'Kangkung'
+  });
 
   return (
-    <div className="bg-[#f7f9fb] text-[#191c1e] min-h-screen flex antialiased">
-      
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-[#191c1e]/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
-
-      {/* SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#f7f9fb] border-r border-[#bbcabf]/30 flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
-        <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-6 right-4 p-2 text-[#565e74] hover:bg-[#e0e3e5] rounded-xl lg:hidden">
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="p-6 flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 transition-colors ${isOffline ? 'bg-red-500' : 'bg-[#10b981]'}`}>
-            <Activity className="w-5 h-5" />
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Navigasi Samping */}
+      <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col justify-between p-6">
+        <div>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+              A
+            </div>
+            <div>
+              <h1 className="font-bold text-gray-800">System Alpha</h1>
+              <p className="text-xs text-emerald-600 font-medium">OTOMATIS - FUZZY LOGIC</p>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[16px] font-bold leading-tight">System Alpha</span>
-            <span className={`text-[10px] tracking-wider font-semibold uppercase ${isOffline ? 'text-red-500' : 'text-[#565e74]'}`}>
-              {isOffline ? 'Alat Terputus' : 'Active Monitoring'}
-            </span>
-          </div>
+
+          <nav className="space-y-1">
+            <a href="/dashboard" className="flex items-center gap-3 px-4 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-medium">
+              <FiActivity /> Dashboard
+            </a>
+            <a href="/analytics" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
+              <FiCpu /> Power Analytics
+            </a>
+            <a href="/command-center" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
+              <FiRefreshCw /> System Status
+            </a>
+          </nav>
         </div>
-        
-        <nav className="flex-1 px-4 py-2 flex flex-col gap-1">
-          <SidebarItem icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" href="/dashboard" />
-          <SidebarItem icon={<BarChart2 className="w-5 h-5" />} label="Analytics" href="/analytics" />
-          <SidebarItem icon={<Sliders className="w-5 h-5" />} label="Command Center" href="/command-center" />
-          <SidebarItem icon={<BookOpen className="w-5 h-5" />} label="Growth Log" href="/growth-log" />
-          <SidebarItem icon={<Activity className="w-5 h-5" />} label="System Health" href="/system-health" />
-        </nav>
-        
-        <div className="p-4 flex flex-col gap-1">
-          <button className="flex items-center gap-3 px-4 py-3 bg-[#10b981]/10 text-[#10b981] rounded-xl font-medium transition-colors hover:bg-[#10b981]/20">
-            <RefreshCw className="w-5 h-5" />
-            Export Data
-          </button>
-          <SidebarItem icon={<HelpCircle className="w-5 h-5" />} label="Support" href="#" />
-          <SidebarItem icon={<LogOut className="w-5 h-5" />} label="Logout" href="/login" />
+
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-xs text-gray-400">Universitas Diponegoro</p>
+          <p className="text-xs font-semibold text-gray-600">Skripsi Yordan Pascaladewa</p>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-260px)]">
-        
-        <header className="bg-[#f7f9fb] pt-6 pb-4 flex justify-between items-center px-4 md:px-10 w-full sticky top-0 z-30 border-b border-[#bbcabf]/30 lg:border-none lg:pt-8">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-[#3c4a42] hover:bg-[#e0e3e5] rounded-xl lg:hidden">
-              <Menu className="w-6 h-6" />
-            </button>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-[22px] font-bold tracking-tight hidden sm:block">AeroGrow Pro - Telemetri</h1>
-              <h1 className="text-[18px] font-bold tracking-tight sm:hidden">Telemetri DFT</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-[#3c4a42] text-[13px] hidden sm:block">Monitor dan kontrol nutrisi otomatis real-time.</p>
-                <div className="sm:hidden flex items-center bg-[#10b981]/10 px-2 py-0.5 rounded-md border border-[#10b981]/30">
-                  <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">🌱 {activeProfile}</span>
-                </div>
-              </div>
-            </div>
+      {/* Konten Utama Dasbor */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        {/* Header Bar */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AeroGrow Pro - Telemetri Otomatis</h1>
+            <p className="text-sm text-gray-500">Pemantauan parameter tandon DFT secara *real-time* berbasis IoT.</p>
           </div>
           
-          <div className="flex items-center gap-3 md:gap-6">
-            <div className="hidden sm:flex items-center gap-2 bg-[#10b981]/10 px-4 py-2 rounded-full border border-[#10b981]/20 shadow-sm">
-              <span className="text-[10px] font-bold text-[#047857] uppercase tracking-wider">🌱 PROFIL AKTIF: {activeProfile}</span>
-            </div>
-
-            <div className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isOffline ? 'bg-red-50 border-red-200' : 'bg-[#f8fafc] border-[#bbcabf]/30'}`}>
-              {isOffline ? <AlertCircle className="w-3 h-3 text-red-500" /> : <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-[#10b981] animate-pulse' : 'bg-[#565e74]'}`}></div>}
-              <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOffline ? 'text-red-600' : 'text-[#565e74]'}`}>
-                {isOffline ? 'SISTEM OFFLINE' : `SISTEM ${data.status.replace(/_/g, ' ')}`}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <IconButton icon={<Bell className="w-5 h-5" />} />
-              <IconButton icon={<Settings className="w-5 h-5" />} hiddenOnMobile />
-              <IconButton icon={<User className="w-5 h-5" />} />
-            </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <FiCheckCircle /> PROFIL AKTIF: {sensorData.komoditas_aktif.toUpperCase()}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+              {isOnline ? 'SISTEM ONLINE' : 'SISTEM OFFLINE (NVS Active)'}
+            </span>
           </div>
         </header>
 
-        <div className="p-4 md:p-10 md:pt-4 grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1">
-          <div className="xl:col-span-8 flex flex-col gap-6">
-            
-            {isOffline && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <p><strong>Peringatan:</strong> Alat terputus. Data di bawah adalah rekaman terakhir.</p>
-              </div>
-            )}
+        {/* Notifikasi Status Koneksi jika Terputus */}
+        {!isOnline && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3 text-amber-800">
+            <FiAlertTriangle className="text-xl flex-shrink-0" />
+            <p className="text-sm">
+              <strong>Peringatan:</strong> Alat hidroponik terputus dari server. Data di bawah ini direkam secara mandiri menggunakan memori lokal NVS (*Fault Tolerance* aktif).
+            </p>
+          </div>
+        )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <MetricCard icon={<Thermometer className="w-4 h-4 text-[#565e74]" />} label="SUHU AIR" value={data.suhu.toFixed(1)} unit="°C" isOffline={isOffline} />
-              <MetricCard icon={<FlaskConical className="w-4 h-4 text-[#565e74]" />} label="TINGKAT PH" value={data.ph.toFixed(1)} isOffline={isOffline} />
-              <MetricCard icon={<Droplets className="w-4 h-4 text-[#565e74]" />} label="NUTRISI (TDS)" value={data.tds} unit="PPM" isOffline={isOffline} />
-              <MetricCard icon={<Calendar className="w-4 h-4 text-[#565e74]" />} label="USIA TANAMAN" value={data.usia > 0 ? `Hari ${data.usia}` : 'Hari --'} isText isOffline={isOffline} />
+        {/* Grid Kartu Sensor (Full Lebar 4 Kolom) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Suhu Air */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between text-gray-400 mb-4">
+              <span className="text-xs font-semibold uppercase tracking-wider">Suhu Air</span>
+              <FiThermometer className="text-lg text-blue-500" />
             </div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-gray-900">{sensorData.suhu_air}</h2>
+              <span className="text-gray-500 font-medium">°C</span>
+            </div>
+            <p className="text-xs text-emerald-600 mt-2 font-medium">Kondisi Optimal</p>
+          </div>
 
-            <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 md:p-6 flex-1 flex flex-col min-h-[400px]">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-[16px] md:text-[18px] font-bold">Tren Kualitas Air (24 Jam)</h2>
-                  <p className="text-[12px] md:text-[13px] text-[#565e74] mt-1">Korelasi pH dan konsentrasi TDS</p>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-1 bg-[#10b981] rounded-full"></div>
-                    <span className="text-[10px] text-[#565e74] font-bold">PH</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-1 bg-[#cbd5e1] rounded-full"></div>
-                    <span className="text-[10px] text-[#565e74] font-bold">TDS</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex-1 w-full mt-4 h-full min-h-[250px] md:min-h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData.length > 0 ? chartData : defaultChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPh" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e3e5" />
-                    <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} tickMargin={12} />
-                    <YAxis yAxisId="left" domain={[0, 14]} ticks={[0, 3, 6, 9, 12, 14]} axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
-                    <YAxis yAxisId="right" orientation="right" domain={[0, 2000]} ticks={[0, 500, 1000, 1500, 2000]} axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#565e74'}} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e0e3e5', fontSize: '12px' }} />
-                    <Area yAxisId="left" type="monotone" dataKey="pH" stroke={isOffline ? "#94a3b8" : "#10b981"} strokeWidth={3} fillOpacity={1} fill="url(#colorPh)" />
-                    <Area yAxisId="right" type="monotone" dataKey="TDS" stroke="#cbd5e1" strokeWidth={2} fillOpacity={0} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+          {/* Tingkat pH */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between text-gray-400 mb-4">
+              <span className="text-xs font-semibold uppercase tracking-wider">Tingkat pH Air</span>
+              <FiDroplet className="text-lg text-emerald-500" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-gray-900">{sensorData.ph_air}</h2>
+              <span className="text-gray-500 font-medium">pH</span>
+            </div>
+            <p className="text-xs text-emerald-600 mt-2 font-medium">Target Acuan: 6.0 - 6.5</p>
+          </div>
+
+          {/* Nutrisi TDS */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between text-gray-400 mb-4">
+              <span className="text-xs font-semibold uppercase tracking-wider">Nutrisi (TDS)</span>
+              <FiActivity className="text-lg text-indigo-500" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-3xl font-bold text-gray-900">{sensorData.tds_ppm}</h2>
+              <span className="text-gray-500 font-medium">PPM</span>
+            </div>
+            <p className="text-xs text-indigo-600 mt-2 font-medium">Kendali Fuzzy Aktif</p>
+          </div>
+
+          {/* Fase Tumbuh */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between text-gray-400 mb-4">
+              <span className="text-xs font-semibold uppercase tracking-wider">Fase & Umur Tanaman</span>
+              <FiCalendar className="text-lg text-amber-500" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-xl font-bold text-gray-900 mt-1">{sensorData.fase_tumbuh}</h2>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Sinkronisasi LUT Otomatis</p>
+          </div>
+        </div>
+
+        {/* Bagian Grafik Tren Kualitas Air (Lebar Penuh) */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Tren Kualitas Air (24 Jam Terakhir)</h3>
+              <p className="text-xs text-gray-400">Grafik korelasi otomatis antara tingkat keasaman (pH) dan konsentrasi (TDS)</p>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <span className="flex items-center gap-1.5 text-emerald-600"><span className="w-3 h-3 bg-emerald-500 rounded-full"></span> pH Air</span>
+              <span className="flex items-center gap-1.5 text-indigo-600"><span className="w-3 h-3 bg-indigo-500 rounded-full"></span> TDS (PPM)</span>
             </div>
           </div>
 
-          {/* CONTROL CENTER */}
-          <div className="xl:col-span-4 flex flex-col h-full gap-6">
-            <div className="bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-6 flex flex-col h-full relative overflow-hidden">
-              <div className="flex items-center gap-2 mb-6">
-                <Settings className="w-5 h-5" />
-                <h2 className="text-[18px] font-bold">Pusat Kendali</h2>
-              </div>
-              
-              <div className={`flex flex-col gap-5 flex-grow transition-opacity ${isOffline ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">PILIH KOMODITAS</label>
-                  <div className="relative mt-1">
-                    <select value={targetTanaman} onChange={(e) => setTargetTanaman(e.target.value)} disabled={isOffline} className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all cursor-pointer font-medium">
-                      <option value="SELADA">Selada Air (Lettuce)</option>
-                      <option value="PAKCOY">Pakcoy (Bok Choy)</option>
-                      <option value="BAYAM">Bayam Hijau</option>
-                      <option value="KANGKUNG">Kangkung Air</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]"><ChevronDown className="w-5 h-5" /></div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 mt-1">
-                  <label className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider">UMUR BIBIT SAAT INI</label>
-                  <div className="relative">
-                    <input type="number" min="1" max="40" value={umurAwal} onChange={handleUmurChange} disabled={isOffline} className="w-full bg-[#f7f9fb] border border-[#bbcabf]/40 text-[14px] rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]/20 focus:border-[#10b981] transition-all font-medium" />
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[#565e74]"><span className="text-xs font-bold tracking-wider">HARI</span></div>
-                  </div>
-                  <p className="text-[11px] text-[#565e74] italic">*Alat akan mulai menghitung dari hari yang Anda tentukan.</p>
-                </div>
-
-                <div className="bg-[#f8fafc] rounded-xl p-5 border border-[#bbcabf]/20 flex flex-col gap-5 mt-2">
-                  <h3 className="text-[10px] text-[#565e74] font-bold uppercase tracking-wider border-b border-[#bbcabf]/20 pb-3">PARAMETER IDEAL</h3>
-                  <div className="flex justify-between items-center pt-1">
-                    <div className="flex items-center gap-2 text-[#565e74]"><FlaskConical className="w-4 h-4" /><span className="text-[13px] font-medium">Target pH</span></div>
-                    <span className="text-[13px] font-bold text-[#10b981]">{plantTargets[targetTanaman].ph}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-[#565e74]"><Droplets className="w-4 h-4" /><span className="text-[13px] font-medium">Target TDS</span></div>
-                    <span className="text-[13px] font-bold text-[#10b981]">{plantTargets[targetTanaman].tds}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <button onClick={handleKirimKomando} disabled={isSyncing || umurAwal === '' || isOffline} className={`w-full text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all shadow-sm ${isSyncing || umurAwal === '' || isOffline ? 'bg-[#94a3b8] cursor-not-allowed' : 'bg-[#10b981] hover:bg-[#059669] active:scale-[0.98]'}`}>
-                  <div className={`w-4 h-4 flex items-center justify-center ${isSyncing ? 'animate-spin' : ''}`}>
-                    {isOffline ? <AlertCircle className="w-4 h-4" /> : (isSyncing ? <RefreshCw className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
-                  </div>
-                  <span>{isOffline ? 'Koneksi Terputus' : (isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sistem')}</span>
-                </button>
-              </div>
-            </div>
+          {/* Area Simulasi Grafik */}
+          <div className="h-72 w-full bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-sm">
+            [ Area Komponen Grafik Recharts / Chart.js Tren Sensor Real-Time ]
           </div>
-
         </div>
       </main>
     </div>
   );
 }
-
-function SidebarItem({ icon, label, href }) {
-  const pathname = usePathname();
-  const active = pathname === href;
-  return (
-    <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors w-full ${active ? 'bg-[#10b981] text-white' : 'text-[#565e74] hover:bg-[#e0e3e5]/30 hover:text-[#191c1e]'}`}>
-      {icon}<span>{label}</span>
-    </Link>
-  );
-}
-
-function IconButton({ icon, hiddenOnMobile }) {
-  return (
-    <button className={`bg-white border border-[#bbcabf]/30 text-[#3c4a42] hover:bg-[#f2f4f6] p-2 rounded-full transition-colors active:scale-95 shadow-sm ${hiddenOnMobile ? 'hidden lg:block' : 'block'}`}>
-      {icon}
-    </button>
-  );
-}
-
-function MetricCard({ icon, label, value, unit, isText, isOffline }) {
-  return (
-    <div className={`bg-white border border-[#e0e3e5] shadow-sm rounded-[1.5rem] p-4 flex flex-col gap-1 hover:shadow-md transition-all ${isOffline ? 'opacity-70 grayscale' : ''}`}>
-      <div className="bg-[#f2f4f6] w-8 h-8 rounded-full flex items-center justify-center mb-1">{icon}</div>
-      <span className="text-[10px] text-[#3c4a42] uppercase tracking-wider font-bold">{label}</span>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className={`font-bold tracking-tight ${isText ? 'text-[20px] md:text-[24px]' : 'text-[28px] md:text-[32px]'}`}>{value}</span>
-        {unit && <span className="text-[#565e74] text-sm">{unit}</span>}
-      </div>
-    </div>
-  );
-}
-
-const defaultChartData = Array.from({ length: 5 }, (_, i) => ({ waktu: '--:--:--', pH: 0, TDS: 0 }));
