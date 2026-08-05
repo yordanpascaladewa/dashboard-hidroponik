@@ -1,150 +1,101 @@
-#include <Arduino.h> 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_ADS1X15.h>
 #include <RTClib.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
-#include <Preferences.h>
-#include <ArduinoJson.h> 
-
-// ==========================================
-// KREDENSIAL WIFI & SERVER VERCEL
-// ==========================================
-const char* ssid = "Sagi56A";         
-const char* password = "m4rk1n05A"; 
-const String serverName = "https://dashboardhidroponik-mu.vercel.app/api/telemetry";
-const String serverSettings = "https://dashboardhidroponik-mu.vercel.app/api/settings";
+#include <Preferences.h> 
+#include <Adafruit_INA219.h>
 
 // ==========================================
 // 1. DEFINISI PIN HARDWARE ESP32
 // ==========================================
-#define I2C_SDA 32
-#define I2C_SCL 33
+#define I2C_SDA 21
+#define I2C_SCL 22
 
 #define PIN_RELAY_NUTRISI_A 26
 #define PIN_RELAY_NUTRISI_B 27
 #define PIN_RELAY_PH_UP     25
-#define PIN_RELAY_PUMP      14
-#define PIN_RELAY_LED       12
-#define PIN_RELAY_FAN       13
 
 #define PIN_ENCODER_CLK 18
 #define PIN_ENCODER_DT  19
 #define PIN_ENCODER_SW  23
+
 #define PIN_SUHU_DS18B20 5
-#define PIN_ANALOG_PH   34 
 
 // ==========================================
-// 2. INISIALISASI OBJEK & KALIBRASI
+// 2. INISIALISASI OBJEK KOMPONEN
 // ==========================================
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
 Adafruit_ADS1115 ads; 
 RTC_DS3231 rtc;
 OneWire oneWire(PIN_SUHU_DS18B20);
 DallasTemperature sensorSuhu(&oneWire);
-Preferences memoriAlat; 
+Preferences preferences; 
+Adafruit_INA219 ina219;
 
-float kValueTDS = 1300.0 / 1417.0; 
-
-// Prototype Fungsi
-void bacaSemuaSensor();
-void perbaruiTampilanLCD();
-void bacaRotaryEncoder();
-void kelolaWaktuDanUsia();
-void kirimDataKeWeb();
-void ambilKomandoWeb(); 
-void sesuaikanTargetNutrisi(); 
-void kirimSettingsKeWeb();
-
-TaskHandle_t TaskWeb; 
-
-// State & UI Menu
+// ==========================================
+// 3. VARIABEL STATE MACHINE & UI MENU
+// ==========================================
 enum MenuState { MONITOR, PILIH_TANAMAN, SET_USIA };
 MenuState currentState = MONITOR;
 
-enum DosingState { RUNNING_NORMAL, PH_UP_INJECT, TDS_INJECT_A, TDS_JEDA, TDS_INJECT_B, TUNGGU_REAKSI };
+enum DosingState { RUNNING_NORMAL, PH_UP_INJECT, TDS_INJECT_A, TDS_INJECT_B, TUNGGU_REAKSI, PAUSED };
 DosingState currentSystemState = RUNNING_NORMAL;
 
-String daftarTanaman[] = {"SELADA", "PAKCOY", "BAYAM", "KANGKUNG"};
-int jumlahTanaman = 4;
+String daftarTanaman[] = {"SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"};
+int jumlahTanaman = 9;
 int indeksTanaman = 0;
 
-// Variabel Kontrol 
-String stringTanamanAktif = "SELADA"; 
-volatile int targetHariWeb = 30;      
-volatile bool webDoserActive = false; 
-volatile bool flagKirimSettings = false; 
-volatile unsigned long lastLocalSettingTime = 0; 
+int lut_pompa[5][3] = {
+  {0, 0, 0},                 
+  {0, 0, 0},                 
+  {8000, 7000, 6000},        
+  {15100, 14100, 13100},     
+  {22100, 21100, 20100}      
+};
 
-// Variabel Waktu & Usia
 bool sudahSetTanggal = false;
 int usiaAwalBibit = 1;
 int usiaAktual = 0;
-int hariTerakhirDicek = -1; 
 
-// Variabel Sensor
 float currentPH = 0.0;
 float currentPPM = 0.0;
 float temperature = 0.0;
+float current_mA = 0.0; 
 
-// Target Parameter Dynamic
-float targetPH_Minimal = 6.0;
-float targetPPM_Minimal = 800.0; 
+float targetPH_Minimal = 6.0; 
+float targetPPM_Minimal = 0.0; 
 
-// Timer Hardware (Core 1)
+// Variabel Rotary Encoder & Long Press
 int lastStateCLK;
-unsigned long lastButtonPress = 0;
+unsigned long buttonPressStartTime = 0;
+bool isButtonPressed = false;
+bool longPressExecuted = false;
+const unsigned long LONG_PRESS_TIME = 2000; // Tahan 2 Detik
+
 unsigned long lastSensorRead = 0;
 unsigned long lastLCDUpdate = 0;
-unsigned long dosingTimer = 0; 
+unsigned long mixingStartTime = 0;
+
+const unsigned long WAKTU_JEDA_ADUK = 120000; 
+int durasiTampilDetik = 0; 
 
 // ==========================================
-// TUGAS CORE 0: INTERFASE JARINGAN & SERVER
+// --- DEKLARASI FUNGSI / PROTOTYPE ---
 // ==========================================
-void TaskWebcode( void * pvParameters ) {
-  unsigned long lastDataSent = 0; 
-  unsigned long lastSettingsGet = 0; 
+void bacaRotaryEncoder();
+void bacaSemuaSensor();
+void perbaruiTampilanLCD();
+void sesuaikanTargetNutrisi();
 
-  for(;;) {
-    if (WiFi.status() == WL_CONNECTED) {
-      
-      if (millis() - lastSettingsGet > 4000) {
-        if (millis() - lastLocalSettingTime > 8000) { 
-          ambilKomandoWeb(); // Aman, tidak ada lagi akses LCD di dalam fungsi ini
-        }
-        lastSettingsGet = millis();
-      }
-
-      if (sudahSetTanggal && (millis() - lastDataSent > 2000)) {
-        kirimDataKeWeb();
-        lastDataSent = millis();
-      }
-
-      if (flagKirimSettings) {
-        kirimSettingsKeWeb();
-        flagKirimSettings = false; 
-      }
-    }
-    vTaskDelay(150 / portTICK_PERIOD_MS); 
-  }
-}
-
+// ==========================================
+// 4. FUNGSI SETUP (EKSEKUSI AWAL)
+// ==========================================
 void setup() {
   Serial.begin(115200);
-  
-  Serial.print("Connecting to WiFi");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi Connected!");
-  
   Wire.begin(I2C_SDA, I2C_SCL);
+  
   lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -155,59 +106,42 @@ void setup() {
   ads.begin(0x48); 
   rtc.begin();
   sensorSuhu.begin();
-
-  analogReadResolution(12);
-  analogSetAttenuation(ADC_11db);
-  pinMode(PIN_ANALOG_PH, INPUT);
+  
+  if (!ina219.begin()) {
+    Serial.println("Gagal menemukan chip INA219!");
+  }
 
   pinMode(PIN_RELAY_NUTRISI_A, OUTPUT);
   pinMode(PIN_RELAY_NUTRISI_B, OUTPUT);
   pinMode(PIN_RELAY_PH_UP, OUTPUT);
-  pinMode(PIN_RELAY_PUMP, OUTPUT);
-  pinMode(PIN_RELAY_LED, OUTPUT);
-  pinMode(PIN_RELAY_FAN, OUTPUT);
-
+  
   digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
   digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
   digitalWrite(PIN_RELAY_PH_UP, HIGH);
-  digitalWrite(PIN_RELAY_PUMP, HIGH);
-  digitalWrite(PIN_RELAY_LED, HIGH);
-  digitalWrite(PIN_RELAY_FAN, HIGH);
 
   pinMode(PIN_ENCODER_CLK, INPUT_PULLUP);
   pinMode(PIN_ENCODER_DT, INPUT_PULLUP);
   pinMode(PIN_ENCODER_SW, INPUT_PULLUP);
   lastStateCLK = digitalRead(PIN_ENCODER_CLK);
 
-  memoriAlat.begin("hidroponik", false); 
-  sudahSetTanggal = memoriAlat.getBool("set", false);
-  usiaAktual = memoriAlat.getInt("usia", 0);
-  hariTerakhirDicek = memoriAlat.getInt("haricek", -1);
-  indeksTanaman = memoriAlat.getInt("tanaman", 0);
-  stringTanamanAktif = memoriAlat.getString("namatanaman", "SELADA");
-  targetHariWeb = memoriAlat.getInt("targetHari", 30);
-
-  sesuaikanTargetNutrisi();
-
-  if (sudahSetTanggal == true) {
-    currentState = MONITOR;
-    currentSystemState = RUNNING_NORMAL;
-    lcd.clear();
-    delay(10); // Memberi nafas pada chip LCD
-  } else {
-    currentState = PILIH_TANAMAN; 
+  preferences.begin("hydro_sys", false);
+  
+  sudahSetTanggal = preferences.getBool("is_set", false);
+  if (sudahSetTanggal) {
+    indeksTanaman = preferences.getInt("idx_tanaman", 0);
+    usiaAktual = preferences.getInt("usia", 1);
+    usiaAwalBibit = usiaAktual; 
+    currentState = MONITOR; 
   }
-
-  xTaskCreatePinnedToCore(TaskWebcode, "TaskWeb", 10000, NULL, 1, &TaskWeb, 0);          
 }
 
 // ==========================================
-// TUGAS CORE 1: PROSES UTAMA HARDWARE & LOOP
+// 5. LOOP UTAMA (JANTUNG SISTEM)
 // ==========================================
 void loop() {
   bacaRotaryEncoder();
 
-  if (millis() - lastSensorRead > 1200) {
+  if (millis() - lastSensorRead > 1000) {
     bacaSemuaSensor();
     lastSensorRead = millis();
   }
@@ -217,8 +151,6 @@ void loop() {
     lastLCDUpdate = millis();
   }
 
-  kelolaWaktuDanUsia();
-
   if (!sudahSetTanggal) {
     digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
     digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
@@ -226,161 +158,214 @@ void loop() {
     return; 
   }
 
-  if (webDoserActive) {
-    switch (currentSystemState) {
-      case RUNNING_NORMAL:
-        if (currentPH < targetPH_Minimal) {
-          currentSystemState = PH_UP_INJECT;
-          digitalWrite(PIN_RELAY_PH_UP, LOW); 
-          dosingTimer = millis();             
-        } 
-        else if (currentPPM < targetPPM_Minimal) {
-          currentSystemState = TDS_INJECT_A;
-          digitalWrite(PIN_RELAY_NUTRISI_A, LOW); 
-          dosingTimer = millis();
-        }
-        break;
-      case PH_UP_INJECT:
-        if (millis() - dosingTimer >= 2000) {     
-          digitalWrite(PIN_RELAY_PH_UP, HIGH);    
-          currentSystemState = TUNGGU_REAKSI;
-          dosingTimer = millis();                 
-        }
-        break;
-      case TDS_INJECT_A:
-        if (millis() - dosingTimer >= 2000) {
-          digitalWrite(PIN_RELAY_NUTRISI_A, HIGH); 
-          currentSystemState = TDS_JEDA;
-          dosingTimer = millis();
-        }
-        break;
-      case TDS_JEDA:
-        if (millis() - dosingTimer >= 1000) {      
-          currentSystemState = TDS_INJECT_B;
-          digitalWrite(PIN_RELAY_NUTRISI_B, LOW);  
-          dosingTimer = millis();
-        }
-        break;
-      case TDS_INJECT_B:
-        if (millis() - dosingTimer >= 2000) {
-          digitalWrite(PIN_RELAY_NUTRISI_B, HIGH); 
-          currentSystemState = TUNGGU_REAKSI; 
-          dosingTimer = millis();
-        }
-        break;
-      case TUNGGU_REAKSI:
-        if (millis() - dosingTimer >= 10000) {     
-          currentSystemState = RUNNING_NORMAL;     
-        }
-        break;
+  sesuaikanTargetNutrisi();
+
+  // ==========================================
+  // 6. BLOK KONTROL AKTUATOR OTOMATIS
+  // ==========================================
+  if (currentSystemState == PAUSED) {
+    return; 
+  }
+
+  if (currentSystemState == TUNGGU_REAKSI) {
+    if (millis() - mixingStartTime >= WAKTU_JEDA_ADUK) {
+      currentSystemState = RUNNING_NORMAL;
     }
-  } else {
-    digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
-    digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
-    digitalWrite(PIN_RELAY_PH_UP, HIGH);
-    currentSystemState = RUNNING_NORMAL;
+    return; 
+  }
+
+  if (currentPH < targetPH_Minimal && currentSystemState == RUNNING_NORMAL) {
+    currentSystemState = PH_UP_INJECT;
+    perbaruiTampilanLCD(); 
+    digitalWrite(PIN_RELAY_PH_UP, LOW); delay(2000); digitalWrite(PIN_RELAY_PH_UP, HIGH); 
+    currentSystemState = TUNGGU_REAKSI;
+    mixingStartTime = millis(); 
+    perbaruiTampilanLCD();
+  }
+  else if (currentSystemState == RUNNING_NORMAL) {
+    float error_TDS = targetPPM_Minimal - currentPPM;
+    int baris_error = 0;
+    int kolom_suhu = 0;
+
+    if (error_TDS <= 0) baris_error = 0;                                
+    else if (error_TDS > 0 && error_TDS <= 50) baris_error = 1;          
+    else if (error_TDS > 50 && error_TDS <= 150) baris_error = 2;        
+    else if (error_TDS > 150 && error_TDS <= 250) baris_error = 3;       
+    else baris_error = 4;                                                
+
+    if (temperature < 24.0) kolom_suhu = 0;
+    else if (temperature >= 24.0 && temperature <= 28.0) kolom_suhu = 1;
+    else kolom_suhu = 2;
+
+    int durasiPompa = lut_pompa[baris_error][kolom_suhu];
+    durasiTampilDetik = durasiPompa / 1000; 
+
+    if (durasiPompa > 0) {
+      currentSystemState = TDS_INJECT_A; perbaruiTampilanLCD();
+      digitalWrite(PIN_RELAY_NUTRISI_A, LOW); delay(durasiPompa); digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
+      delay(3000); 
+      currentSystemState = TDS_INJECT_B; perbaruiTampilanLCD();
+      digitalWrite(PIN_RELAY_NUTRISI_B, LOW); delay(durasiPompa); digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
+      
+      currentSystemState = TUNGGU_REAKSI;
+      mixingStartTime = millis(); 
+      perbaruiTampilanLCD();
+    }
   }
 }
 
+// ==========================================
+// 7. FUNGSI PENYESUAIAN TARGET [9 TANAMAN]
+// ==========================================
 void sesuaikanTargetNutrisi() {
-  if (stringTanamanAktif == "SELADA") {
+  String tanaman = daftarTanaman[indeksTanaman];
+
+  if (tanaman == "SELADA") {
     targetPH_Minimal = 5.8;
     if (usiaAktual <= 7) targetPPM_Minimal = 500.0;
     else if (usiaAktual <= 14) targetPPM_Minimal = 700.0;
     else if (usiaAktual <= 21) targetPPM_Minimal = 800.0;
     else targetPPM_Minimal = 900.0;
   }
-  else if (stringTanamanAktif == "PAKCOY") {
+  else if (tanaman == "SAWI") {
     targetPH_Minimal = 6.0;
     if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
     else if (usiaAktual <= 14) targetPPM_Minimal = 800.0;
     else if (usiaAktual <= 21) targetPPM_Minimal = 1000.0;
     else targetPPM_Minimal = 1200.0;
   }
-  else if (stringTanamanAktif == "BAYAM") {
+  else if (tanaman == "BAYAM") {
     targetPH_Minimal = 6.0;
     if (usiaAktual <= 7) targetPPM_Minimal = 500.0;
     else if (usiaAktual <= 14) targetPPM_Minimal = 800.0;
     else if (usiaAktual <= 21) targetPPM_Minimal = 1000.0;
     else targetPPM_Minimal = 1100.0;
   }
-  else if (stringTanamanAktif == "KANGKUNG") {
+  else if (tanaman == "KANGKUNG") {
     targetPH_Minimal = 5.5;
     if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
     else if (usiaAktual <= 14) targetPPM_Minimal = 900.0;
     else if (usiaAktual <= 21) targetPPM_Minimal = 1100.0;
     else targetPPM_Minimal = 1300.0;
   }
+  else if (tanaman == "PAKCOY") {
+    targetPH_Minimal = 6.0;
+    if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
+    else if (usiaAktual <= 14) targetPPM_Minimal = 850.0;
+    else if (usiaAktual <= 21) targetPPM_Minimal = 1050.0;
+    else targetPPM_Minimal = 1200.0;
+  }
+  else if (tanaman == "CAISIM") {
+    targetPH_Minimal = 6.0;
+    if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
+    else if (usiaAktual <= 14) targetPPM_Minimal = 850.0;
+    else if (usiaAktual <= 21) targetPPM_Minimal = 1000.0;
+    else targetPPM_Minimal = 1200.0;
+  }
+  else if (tanaman == "SELEDRI") {
+    targetPH_Minimal = 6.0;
+    if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
+    else if (usiaAktual <= 14) targetPPM_Minimal = 800.0;
+    else if (usiaAktual <= 21) targetPPM_Minimal = 1000.0;
+    else targetPPM_Minimal = 1200.0;
+  }
+  else if (tanaman == "KALE") {
+    targetPH_Minimal = 6.0;
+    if (usiaAktual <= 7) targetPPM_Minimal = 700.0;
+    else if (usiaAktual <= 14) targetPPM_Minimal = 900.0;
+    else if (usiaAktual <= 21) targetPPM_Minimal = 1100.0;
+    else targetPPM_Minimal = 1300.0;
+  }
+  else if (tanaman == "MINT") {
+    targetPH_Minimal = 6.0;
+    if (usiaAktual <= 7) targetPPM_Minimal = 600.0;
+    else if (usiaAktual <= 14) targetPPM_Minimal = 700.0;
+    else if (usiaAktual <= 21) targetPPM_Minimal = 800.0;
+    else targetPPM_Minimal = 900.0;
+  }
 }
 
+// ==========================================
+// 8. FUNGSI PEMBACAAN SENSOR 
+// ==========================================
 void bacaSemuaSensor() {
   sensorSuhu.requestTemperatures();
   temperature = sensorSuhu.getTempCByIndex(0);
 
-  unsigned long total_adc = 0;
-  for (int i = 0; i < 60; i++) {
-    total_adc += analogRead(PIN_ANALOG_PH);
-    delayMicroseconds(150); 
-  }
-  float rerata_adc_ph = total_adc / 60.0;
-  float voltage_ph = (rerata_adc_ph * 3.3) / 4095.0; 
-
-  currentPH = (-5.70 * voltage_ph) + 21.20; 
+  int16_t adc_ph = ads.readADC_SingleEnded(1);
+  float voltage_ph = ads.computeVolts(adc_ph);
+  currentPH = (-6.33 * voltage_ph) + 23.00;
   if (currentPH < 0.0) currentPH = 0.0;
   if (currentPH > 14.0) currentPH = 14.0;
 
+  float kValueTDS = 1300.0 / 1417.0;
   int16_t adc_tds = ads.readADC_SingleEnded(0);
   float voltage_tds = ads.computeVolts(adc_tds);
-  float ppm_mentah = voltage_tds * 575.83; 
-  currentPPM = ppm_mentah * kValueTDS; 
-}
-
-void kelolaWaktuDanUsia() {
-  if (sudahSetTanggal) {
-    DateTime now = rtc.now();
-    if (hariTerakhirDicek == -1) hariTerakhirDicek = now.day();
-    else if (now.day() != hariTerakhirDicek) {
-      usiaAktual++;
-      hariTerakhirDicek = now.day(); 
-      memoriAlat.putInt("usia", usiaAktual);
-      memoriAlat.putInt("haricek", hariTerakhirDicek);
-      
-      sesuaikanTargetNutrisi();
-      flagKirimSettings = true; 
-    }
+  currentPPM = (voltage_tds * 575.83) * kValueTDS; 
+  
+  current_mA = ina219.getCurrent_mA();
+  if (current_mA < 0) {
+    current_mA = 0.0; // Filter noise arus minus
   }
 }
 
+// ==========================================
+// 9. FUNGSI UI / LAYAR LCD
+// ==========================================
 void perbaruiTampilanLCD() {
   switch (currentState) {
     case MONITOR:
-      {
-        String teksBaris1 = "PLANT:" + stringTanamanAktif;
-        while(teksBaris1.length() < 20) teksBaris1 += " ";
-        lcd.setCursor(0, 0); lcd.print(teksBaris1.substring(0, 20));
+      { 
+        String teksKiri = "PLANT:" + daftarTanaman[indeksTanaman];
+        String teksKanan = String(current_mA, 0) + "mA";
         
-        lcd.setCursor(0, 1);
-        if (sudahSetTanggal) {
-          String teksUmur = "UMUR:" + String(usiaAktual) + "/" + String(targetHariWeb);
-          while(teksUmur.length() < 13) teksUmur += " "; 
-          lcd.print(teksUmur.substring(0, 13)); 
+        int sisaSpasi = 20 - teksKiri.length() - teksKanan.length();
+        String spasi = "";
+        
+        if (sisaSpasi > 0) {
+          for (int i = 0; i < sisaSpasi; i++) spasi += " ";
         } else {
-          lcd.print("UMUR:[STBY]  ");
+          teksKiri = "P:" + daftarTanaman[indeksTanaman];
+          sisaSpasi = 20 - teksKiri.length() - teksKanan.length();
+          for (int i = 0; i < sisaSpasi; i++) spasi += " ";
         }
-        
-        lcd.setCursor(13, 1); 
-        lcd.print(String(temperature, 1) + char(223) + "C   ");
 
-        lcd.setCursor(0, 2); lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
-        lcd.setCursor(0, 3);
-        if (!sudahSetTanggal)                          lcd.print("STAT: STANDBY WAIT  ");
-        else if (!webDoserActive)                      lcd.print("STAT: DOSER OFFLINE ");
-        else if (currentSystemState == PH_UP_INJECT)   lcd.print("STAT: INJECT pH UP  ");
-        else if (currentSystemState == TDS_INJECT_A)   lcd.print("STAT: INJECT NUT. A ");
-        else if (currentSystemState == TDS_INJECT_B)   lcd.print("STAT: INJECT NUT. B ");
-        else if (currentSystemState == TDS_JEDA)       lcd.print("STAT: JEDA A KE B   ");
-        else if (currentSystemState == TUNGGU_REAKSI)  lcd.print("STAT: MIXING WATER  ");
-        else lcd.print("STAT: RUNNING NORMAL");
+        lcd.setCursor(0, 0); 
+        lcd.print(teksKiri + spasi + teksKanan);
+      }
+      
+      lcd.setCursor(0, 1);
+      if (sudahSetTanggal) {
+        lcd.print("UMUR: H-" + String(usiaAktual) + " TGT:" + String(targetPPM_Minimal, 0) + " ");
+      } else {
+        lcd.print("UMUR: [STBY]        ");
+      }
+      
+      lcd.setCursor(0, 2);
+      lcd.print("PPM:" + String(currentPPM, 0) + "  pH:" + String(currentPH, 1) + "     ");
+      
+      lcd.setCursor(0, 3);
+      if (!sudahSetTanggal) {
+        lcd.print("STAT: STANDBY WAIT  ");
+      }
+      else if (currentSystemState == PAUSED) {
+        lcd.print("STAT: POMPA NONAKTIF");
+      }
+      else if (currentSystemState == PH_UP_INJECT) {
+        lcd.print("STAT: INJECT pH UP  ");
+      }
+      else if (currentSystemState == TDS_INJECT_A) {
+        lcd.print("STAT: INJ. A (" + String(durasiTampilDetik) + "s)  ");
+      }
+      else if (currentSystemState == TDS_INJECT_B) {
+        lcd.print("STAT: INJ. B (" + String(durasiTampilDetik) + "s)  ");
+      }
+      else if (currentSystemState == TUNGGU_REAKSI) {
+        int sisaWaktu = (WAKTU_JEDA_ADUK - (millis() - mixingStartTime)) / 1000;
+        lcd.print("STAT: ADUK (" + String(sisaWaktu) + "s)   ");
+      }
+      else {
+        lcd.print("STAT: RUNNING NORMAL");
       }
       break;
 
@@ -400,6 +385,9 @@ void perbaruiTampilanLCD() {
   }
 }
 
+// ==========================================
+// 10. FUNGSI KENDALI MENU & MEMORI
+// ==========================================
 void bacaRotaryEncoder() {
   int currentStateCLK = digitalRead(PIN_ENCODER_CLK);
   if (currentStateCLK != lastStateCLK  && currentStateCLK == 1) {
@@ -407,7 +395,9 @@ void bacaRotaryEncoder() {
       if (currentState == PILIH_TANAMAN) {
         indeksTanaman++;
         if (indeksTanaman >= jumlahTanaman) indeksTanaman = 0;
-      } else if (currentState == SET_USIA) usiaAwalBibit++;
+      } else if (currentState == SET_USIA) {
+        usiaAwalBibit++;
+      }
     } else {
       if (currentState == PILIH_TANAMAN) {
         indeksTanaman--;
@@ -420,149 +410,78 @@ void bacaRotaryEncoder() {
   }
   lastStateCLK = currentStateCLK;
 
-  if (digitalRead(PIN_ENCODER_SW) == LOW) {
-    if (millis() - lastButtonPress > 250) { 
-      if (currentState == MONITOR && sudahSetTanggal) { 
+  int btnState = digitalRead(PIN_ENCODER_SW);
+  
+  if (btnState == LOW && !isButtonPressed) {
+    delay(50); 
+    isButtonPressed = true;
+    buttonPressStartTime = millis();
+    longPressExecuted = false;
+  }
+
+  // --- LOGIKA LONG PRESS (RESET & GANTI TANAMAN) ---
+  if (btnState == LOW && isButtonPressed && !longPressExecuted) {
+    if (millis() - buttonPressStartTime > LONG_PRESS_TIME) {
+      longPressExecuted = true; 
+      
+      if (sudahSetTanggal && currentState == MONITOR) {
+        // RESET TOTAL
         sudahSetTanggal = false;
+        currentSystemState = RUNNING_NORMAL;
+        
+        digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
+        digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
+        digitalWrite(PIN_RELAY_PH_UP, HIGH);
+        
+        preferences.putBool("is_set", false);
+        
+        lcd.clear();
+        lcd.setCursor(0,1); lcd.print("   SISTEM DI-RESET  ");
+        lcd.setCursor(0,2); lcd.print(" KEMBALI KE STANDBY ");
+        delay(2000);
+        
         currentState = PILIH_TANAMAN;
-        memoriAlat.putBool("set", false); 
-        lcd.clear(); 
-        delay(10); // Memberi nafas pada chip LCD sebelum ditimpa UI baru
+        lcd.clear();
+      }
+    }
+  }
+
+  // --- LOGIKA SHORT PRESS ---
+  if (btnState == HIGH && isButtonPressed) {
+    isButtonPressed = false;
+    
+    if (!longPressExecuted && (millis() - buttonPressStartTime > 50)) {
+      
+      // [UPDATE] SHORT PRESS SAAT MONITOR = PAUSE / RESUME POMPA
+      if (currentState == MONITOR && sudahSetTanggal) {
+        if (currentSystemState != PAUSED) {
+          currentSystemState = PAUSED;
+          digitalWrite(PIN_RELAY_NUTRISI_A, HIGH);
+          digitalWrite(PIN_RELAY_NUTRISI_B, HIGH);
+          digitalWrite(PIN_RELAY_PH_UP, HIGH);
+        } else {
+          currentSystemState = RUNNING_NORMAL;
+        }
       } 
-      else if (currentState == PILIH_TANAMAN) { 
-        stringTanamanAktif = daftarTanaman[indeksTanaman];
+      else if (currentState == MONITOR && !sudahSetTanggal) {
+        currentState = PILIH_TANAMAN; 
+        lcd.clear();
+      } 
+      else if (currentState == PILIH_TANAMAN) {
         currentState = SET_USIA; 
-        lcd.clear(); 
-        delay(10);
+        lcd.clear();
       } 
       else if (currentState == SET_USIA) {
         usiaAktual = usiaAwalBibit;
         sudahSetTanggal = true;
+        
+        preferences.putBool("is_set", true);
+        preferences.putInt("idx_tanaman", indeksTanaman);
+        preferences.putInt("usia", usiaAktual);
+        
         currentState = MONITOR;
-        currentSystemState = RUNNING_NORMAL;
-        hariTerakhirDicek = rtc.now().day(); 
-        
-        sesuaikanTargetNutrisi();
-
-        memoriAlat.putBool("set", sudahSetTanggal);
-        memoriAlat.putInt("usia", usiaAktual);
-        memoriAlat.putInt("haricek", hariTerakhirDicek);
-        memoriAlat.putInt("tanaman", indeksTanaman);
-        memoriAlat.putString("namatanaman", stringTanamanAktif);
-        
         lcd.clear();
-        delay(10);
-        
-        lastLocalSettingTime = millis(); 
-        flagKirimSettings = true; 
-      }
-      lastButtonPress = millis();
-    }
-  }
-}
-
-void kirimDataKeWeb() {
-  WiFiClientSecure client;
-  client.setInsecure(); 
-  HTTPClient http;
-  http.begin(client, serverName);
-  http.addHeader("Content-Type", "application/json");
-
-  String statusString = "RUNNING_NORMAL";
-  if (!webDoserActive) statusString = "DOSER_OFFLINE";
-  else if (currentSystemState == PH_UP_INJECT) statusString = "PH_UP_INJECT";
-  else if (currentSystemState == TDS_INJECT_A) statusString = "TDS_INJECT_A";
-  else if (currentSystemState == TDS_INJECT_B) statusString = "TDS_INJECT_B";
-  else if (currentSystemState == TDS_JEDA) statusString = "TDS_JEDA";
-  else if (currentSystemState == TUNGGU_REAKSI) statusString = "TUNGGU_REAKSI";
-
-  String httpRequestData = "{\"suhu\":" + String(temperature, 1) + 
-                             ",\"ph\":" + String(currentPH, 2) + 
-                             ",\"tds\":" + String(currentPPM, 0) + 
-                             ",\"usia\":" + String(usiaAktual) +
-                             ",\"status\":\"" + statusString + "\"}";
-
-  http.POST(httpRequestData);
-  http.end();
-}
-
-void ambilKomandoWeb() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    
-    String url = serverSettings + "?t=" + String(millis());
-    http.begin(client, url);
-    int httpResponseCode = http.GET();
-
-    if (httpResponseCode == 200) {
-      String payload = http.getString();
-      JsonDocument doc; 
-      DeserializationError err = deserializeJson(doc, payload);
-      
-      if (!err) {
-        if (!doc["targetHari"].isNull()) {
-          int hariBaru = doc["targetHari"].as<int>();
-          if (hariBaru != targetHariWeb && hariBaru > 0) {
-            targetHariWeb = hariBaru;
-            memoriAlat.putInt("targetHari", (int)targetHariWeb);
-            // lcd.clear(); --> SUDAH DIHAPUS PERMANEN DARI CORE 0
-          }
-        }
-
-        if (!doc["targetTanaman"].isNull()) {
-          String tanamanBaru = doc["targetTanaman"].as<String>();
-          if (tanamanBaru != stringTanamanAktif) {
-            stringTanamanAktif = tanamanBaru;
-            if(stringTanamanAktif == "SELADA") indeksTanaman = 0;
-            else if(stringTanamanAktif == "PAKCOY") indeksTanaman = 1;
-            else if(stringTanamanAktif == "BAYAM") indeksTanaman = 2;
-            else if(stringTanamanAktif == "KANGKUNG") indeksTanaman = 3;
-            
-            sudahSetTanggal = true;
-            currentState = MONITOR;
-            currentSystemState = RUNNING_NORMAL;
-            
-            sesuaikanTargetNutrisi();
-            
-            memoriAlat.putBool("set", true);
-            memoriAlat.putString("namatanaman", stringTanamanAktif);
-            memoriAlat.putInt("tanaman", indeksTanaman);
-            // lcd.clear(); --> SUDAH DIHAPUS PERMANEN DARI CORE 0
-          }
-        }
-
-        if (!doc["actuators"].isNull()) {
-          bool pumpWeb = doc["actuators"]["pump"].as<bool>();
-          bool ledWeb = doc["actuators"]["led"].as<bool>();
-          bool fanWeb = doc["actuators"]["fan"].as<bool>();
-          
-          webDoserActive = doc["actuators"]["doser"].as<bool>();
-
-          digitalWrite(PIN_RELAY_PUMP, pumpWeb ? LOW : HIGH);
-          digitalWrite(PIN_RELAY_LED, ledWeb ? LOW : HIGH);
-          digitalWrite(PIN_RELAY_FAN, fanWeb ? LOW : HIGH);
-        }
       }
     }
-    http.end();
-  }
-}
-
-void kirimSettingsKeWeb() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    
-    http.begin(client, serverSettings);
-    http.addHeader("Content-Type", "application/json");
-
-    String jsonPayload = "{\"targetTanaman\":\"" + stringTanamanAktif + 
-                         "\",\"targetHari\":" + String(targetHariWeb) + "}";
-
-    http.POST(jsonPayload);
-    http.end();
   }
 }
