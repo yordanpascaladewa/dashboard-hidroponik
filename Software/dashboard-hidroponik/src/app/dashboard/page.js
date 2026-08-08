@@ -114,7 +114,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">TEGANGAN</span>
                 <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
-                  <span className="material-symbols-outlined text-slate-600 text-[18px]">bolt</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                 </div>
               </div>
               <div className="flex items-baseline gap-1">
@@ -128,7 +130,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">ARUS</span>
                 <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
-                  <span className="material-symbols-outlined text-slate-600 text-[18px]">electric_bolt</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                 </div>
               </div>
               <div className="flex items-baseline gap-1">
