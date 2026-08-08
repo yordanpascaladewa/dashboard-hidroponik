@@ -1,83 +1,63 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Activity, Lock, Mail, ArrowRight } from 'lucide-react';
+import { FiActivity } from 'react-icons/fi';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    // Simulasi loading 1 detik sebelum masuk dashboard
-    setTimeout(() => {
+    // Logika autentikasi sederhana (bisa disambung ke MongoDB/API nanti)
+    if (username && password) {
       router.push('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fb] flex items-center justify-center p-4 antialiased">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#e0e3e5] p-8 md:p-10">
-        
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-14 h-14 bg-[#10b981] rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-[#10b981]/20">
-            <Activity size={32} />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white mb-4 shadow-md">
+            <FiActivity className="text-2xl" />
           </div>
-          <h1 className="text-2xl font-bold text-[#191c1e] tracking-tight mb-2">Login Sistem</h1>
-          <p className="text-sm text-[#565e74] font-medium">Sistem Pemberian Nutrisi Hidroponik Otomatis</p>
+          <h1 className="text-2xl font-bold text-gray-900">AeroGrow Pro</h1>
+          <p className="text-sm text-gray-500">Telemetri Sistem Fertigasi Otomatis</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-[#565e74] uppercase tracking-wider">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#bbcabf] w-5 h-5" />
-              <input 
-                type="email" 
-                required
-                defaultValue="yordan@gmail.com"
-                className="w-full bg-[#f7f9fb] border border-[#e0e3e5] rounded-xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all text-[#191c1e]"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+            <input 
+              type="text" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 focus:bg-white transition-colors"
+              placeholder="Masukkan username"
+              required
+            />
           </div>
-
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-[#565e74] uppercase tracking-wider">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#bbcabf] w-5 h-5" />
-              <input 
-                type="password" 
-                required
-                defaultValue="123456"
-                className="w-full bg-[#f7f9fb] border border-[#e0e3e5] rounded-xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all text-[#191c1e]"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 focus:bg-white transition-colors"
+              placeholder="••••••••"
+              required
+            />
           </div>
-
           <button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full bg-[#10b981] hover:bg-[#006c49] text-white font-semibold rounded-xl py-3.5 mt-4 transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm"
+            type="submit"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-sm"
           >
-            {isLoading ? (
-              <span className="animate-pulse">Authenticating...</span>
-            ) : (
-              <>
-                <span>Login</span>
-                <ArrowRight size={18} />
-              </>
-            )}
+            Masuk ke Sistem
           </button>
         </form>
-
-        <div className="mt-8 text-center border-t border-[#e0e3e5] pt-6">
-          <p className="text-[10px] font-bold text-[#6c7a71] uppercase tracking-widest">
-            Tugas Akhir Teknik Elektro
-          </p>
-        </div>
-
       </div>
     </div>
   );

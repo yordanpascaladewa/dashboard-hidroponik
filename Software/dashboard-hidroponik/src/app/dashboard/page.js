@@ -1,201 +1,239 @@
-'use client';
-
-import { useState } from 'react';
-import { 
-  FiThermometer, FiDroplet, FiActivity, FiCalendar, 
-  FiBell, FiSettings, FiUser, FiAlertCircle 
-} from 'react-icons/fi';
+import React from 'react';
 
 export default function DashboardPage() {
-  const [isOnline] = useState(false); // Simulasi koneksi alat (terputus)
-  const [isPlantingActive, setIsPlantingActive] = useState(false);
-  const [komoditas, setKomoditas] = useState('Kangkung');
-  const [umurPanen, setUmurPanen] = useState(25);
-
-  const handleStart = (e) => {
-    e.preventDefault();
-    setIsPlantingActive(true);
-    // Trigger MQTT/API ke ESP32 untuk memulai siklus otomatis di sini
-  };
-
-  const handleStop = () => {
-    setIsPlantingActive(false);
-    // Trigger MQTT/API ke ESP32 untuk menghentikan siklus
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8f9fc] p-6 lg:p-8 font-sans text-gray-800">
-      
-      {/* Header Bar Area */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-[22px] font-bold text-gray-900">AeroGrow Pro - Telemetri</h1>
-          <p className="text-sm text-gray-500 mt-1">Monitor dan kontrol nutrisi otomatis real-time.</p>
+    <main className="flex-1 flex flex-col min-h-screen w-full bg-[#f7f9fb]">
+      {/* Top App Bar */}
+      <header className="pt-6 pb-4 md:pt-8 flex justify-between items-center px-4 md:px-10 w-full">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[20px] md:text-[22px] font-bold text-slate-800 tracking-tight hidden sm:block">
+            AeroGrow Pro - Telemetri DFT
+          </h1>
+          <h1 className="text-[20px] font-bold text-slate-800 tracking-tight sm:hidden">
+            Telemetri DFT
+          </h1>
+          <p className="text-slate-500 text-[13px]">
+            Monitor dan kontrol nutrisi otomatis real-time.
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-4 py-2 rounded-full text-[11px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
-            🌱 Profil Aktif: {komoditas}
-          </span>
-          <span className="inline-flex items-center px-4 py-2 rounded-full text-[11px] font-bold tracking-wide bg-red-50 text-red-600 border border-red-200 uppercase gap-1.5">
-            <FiAlertCircle className="text-sm" /> Sistem Offline
-          </span>
-          <div className="flex gap-2 ml-2">
-            <button className="p-2.5 bg-white border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"><FiBell /></button>
-            <button className="p-2.5 bg-white border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"><FiSettings /></button>
-            <button className="p-2.5 bg-white border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"><FiUser /></button>
-          </div>
-        </div>
-      </div>
+      </header>
 
-      {/* Main Grid Layout */}
-      <div className="flex flex-col xl:flex-row gap-6">
-        
-        {/* LEFT COLUMN: Telemetry & Charts */}
-        <div className="flex-1 space-y-6">
+      {/* Dashboard Canvas */}
+      <div className="px-4 md:px-10 md:pt-4 grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 flex-1 pb-20 lg:pb-6">
+        {/* Main Full Column (Metrics & Chart) */}
+        <div className="xl:col-span-12 flex flex-col gap-4 md:gap-6">
           
-          {/* Offline Alert Banner */}
-          {!isOnline && (
-            <div className="bg-red-50 border border-red-100 text-red-600 px-5 py-4 rounded-2xl flex items-center gap-3 text-sm shadow-sm">
-              <FiAlertCircle className="text-lg flex-shrink-0" />
-              <p><strong className="font-semibold">Peringatan:</strong> Alat hidroponik terputus dari server. Data di bawah ini adalah rekaman terakhir sebelum koneksi terputus.</p>
-            </div>
-          )}
-
-          {/* 4 Telemetry Cards */}
+          {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Suhu Air */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Suhu Air</span>
-                <div className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg text-gray-400"><FiThermometer /></div>
-              </div>
-              <h2 className="text-[32px] font-black text-gray-800 leading-none">28.4<span className="text-sm text-gray-500 font-semibold ml-1">°C</span></h2>
-            </div>
-
-            {/* Tingkat pH */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Tingkat pH</span>
-                <div className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg text-gray-400"><FiDroplet /></div>
-              </div>
-              <h2 className="text-[32px] font-black text-gray-800 leading-none">5.6</h2>
-            </div>
-
-            {/* Nutrisi TDS */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nutrisi (TDS)</span>
-                <div className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg text-gray-400"><FiActivity /></div>
-              </div>
-              <h2 className="text-[32px] font-black text-gray-800 leading-none">1152<span className="text-sm text-gray-500 font-semibold ml-1">PPM</span></h2>
-            </div>
-
-            {/* Fase Tumbuh */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Fase Tumbuh</span>
-                <div className="p-1.5 bg-gray-50 border border-gray-100 rounded-lg text-gray-400"><FiCalendar /></div>
-              </div>
-              <h2 className="text-2xl font-black text-gray-800 leading-none mt-2">Hari 15</h2>
-            </div>
-          </div>
-
-          {/* Large Chart Area */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <h3 className="text-[17px] font-bold text-gray-900">Tren Kualitas Air (24 Jam)</h3>
-                <p className="text-[13px] text-gray-500 mt-1">Korelasi pH dan konsentrasi TDS</p>
-              </div>
-              <div className="flex items-center gap-4 text-xs font-bold tracking-wide">
-                <span className="flex items-center gap-1.5 text-gray-500"><span className="w-2.5 h-2.5 bg-[#00c48c] rounded-full"></span> PH</span>
-                <span className="flex items-center gap-1.5 text-gray-500"><span className="w-2.5 h-2.5 bg-blue-400 rounded-full"></span> TDS</span>
-              </div>
-            </div>
             
-            {/* Area Visualisasi Grafik Line */}
-            <div className="h-[340px] w-full border-b border-l border-gray-100 relative">
-               <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm font-medium">
-                  [ Integrasi Recharts / Chart.js Line Chart ]
-               </div>
+            {/* Metric 1 - Suhu Air */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">SUHU AIR</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[32px] md:text-[36px] text-slate-800 font-bold tracking-tight">0.0</span>
+                <span className="text-slate-500 text-sm">°C</span>
+              </div>
+            </div>
+
+            {/* Metric 2 - Tingkat pH */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">TINGKAT PH</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" />
+                    <path d="M6.453 15h11.094" />
+                    <path d="M8.5 2h7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[32px] md:text-[36px] text-slate-800 font-bold tracking-tight">0.0</span>
+              </div>
+            </div>
+
+            {/* Metric 3 - Nutrisi TDS */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">NUTRISI (TDS)</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[32px] md:text-[36px] text-slate-800 font-bold tracking-tight">0</span>
+                <span className="text-slate-500 text-sm">PPM</span>
+              </div>
+            </div>
+
+            {/* Metric 4 - Fase Tumbuh */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">FASE TUMBUH</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-600">
+                    <path d="M8 2v3" />
+                    <path d="M16 2v3" />
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[24px] md:text-[28px] text-slate-800 font-bold tracking-tight">Hari --</span>
+              </div>
+            </div>
+
+            {/* Metric 5 - Komoditas */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow lg:col-span-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">KOMODITAS</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-500">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[24px] md:text-[28px] font-bold text-slate-800">SELADA</span>
+              </div>
+            </div>
+
+            {/* Metric 6 - Tegangan (Sensor INA219) */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">TEGANGAN</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-slate-600 text-[18px]">bolt</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[32px] md:text-[36px] text-slate-800 font-bold tracking-tight">0.0</span>
+                <span className="text-slate-500 text-sm">V</span>
+              </div>
+            </div>
+
+            {/* Metric 7 - Arus (Sensor INA219) */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-5 flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold">ARUS</span>
+                <div className="bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-slate-600 text-[18px]">electric_bolt</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[32px] md:text-[36px] text-slate-800 font-bold tracking-tight">0</span>
+                <span className="text-slate-500 text-sm">mA</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* RIGHT COLUMN: Pusat Kendali (Setup & Monitoring Mode) */}
-        <div className="w-full xl:w-[400px]">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full min-h-[500px]">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-8">
-              <FiSettings className="text-gray-400" /> Pusat Kendali
-            </h3>
-
-            {/* Form Setup - Hanya bisa diedit jika sistem belum mulai menanam */}
-            <form className="flex-1 space-y-6" onSubmit={handleStart}>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Pilih Komoditas</label>
-                <select 
-                  value={komoditas}
-                  onChange={(e) => setKomoditas(e.target.value)}
-                  disabled={isPlantingActive} // Nonaktifkan jika sudah masuk mode monitoring
-                  className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 text-gray-700 font-medium disabled:opacity-60 appearance-none"
-                >
-                  <option value="Kangkung">Kangkung</option>
-                  <option value="Pakcoy">Pakcoy</option>
-                  <option value="Selada">Selada</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Target Usia Panen (Maks 40)</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    value={umurPanen}
-                    onChange={(e) => setUmurPanen(e.target.value)}
-                    disabled={isPlantingActive}
-                    className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 text-gray-700 font-medium disabled:opacity-60"
-                  />
-                  <span className="absolute right-4 top-3.5 text-xs font-bold text-gray-400">HARI</span>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+            
+            {/* Analytics Card */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-6 flex-1 flex flex-col min-h-[350px] md:min-h-[450px] lg:col-span-3">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+                <div>
+                  <h2 className="text-[18px] font-bold text-slate-800">Tren Kualitas Air (24 Jam)</h2>
+                  <p className="text-[13px] text-slate-500 mt-1">Korelasi pH dan konsentrasi TDS</p>
                 </div>
-              </div>
-
-              <div className="bg-[#f8f9fc] p-5 rounded-xl border border-gray-100 mt-4">
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Parameter Ideal</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                    <span className="text-sm font-semibold text-gray-500 flex items-center gap-2"><FiDroplet className="text-gray-400"/> Target pH</span>
-                    <span className="text-sm font-bold text-[#00c48c]">6.0 - 6.5</span>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-1 bg-emerald-500 rounded-full"></div>
+                    <span className="text-[10px] text-slate-500 font-bold">PH</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-500 flex items-center gap-2"><FiActivity className="text-gray-400"/> Target TDS</span>
-                    <span className="text-sm font-bold text-[#00c48c]">1000 - 1200 PPM</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-1 bg-slate-300 rounded-full"></div>
+                    <span className="text-[10px] text-slate-500 font-bold">TDS</span>
                   </div>
                 </div>
               </div>
-            </form>
+              
+              {/* Minimalist Chart Area */}
+              <div className="flex-1 relative w-full h-full min-h-[250px]">
+                {/* Y-Axis Labels */}
+                <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[11px] text-slate-400 h-full font-mono">
+                  <span>4</span>
+                  <span>3</span>
+                  <span>2</span>
+                  <span>1</span>
+                  <span>0</span>
+                </div>
+                {/* X-Axis Labels */}
+                <div className="absolute bottom-0 left-6 md:left-8 right-0 flex justify-between text-[10px] md:text-[11px] text-slate-400 font-mono">
+                  <span>00:00</span>
+                  <span className="hidden sm:inline">06:00</span>
+                  <span>12:00</span>
+                  <span className="hidden sm:inline">18:00</span>
+                  <span>Sekarang</span>
+                </div>
+                {/* Grid Lines */}
+                <div className="absolute inset-0 left-6 md:left-8 bottom-6 md:bottom-8 flex flex-col justify-between">
+                  <div className="w-full h-px border-b border-dashed border-slate-200"></div>
+                  <div className="w-full h-px border-b border-dashed border-slate-200"></div>
+                  <div className="w-full h-px border-b border-dashed border-slate-200"></div>
+                  <div className="w-full h-px border-b border-dashed border-slate-200"></div>
+                  <div className="w-full h-[2px] bg-slate-300"></div>
+                </div>
+                {/* SVG Chart Lines */}
+                <svg className="absolute inset-0 left-6 md:left-8 bottom-6 md:bottom-8 w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] h-[calc(100%-1.5rem)] md:h-[calc(100%-2rem)]" preserveAspectRatio="none" viewBox="0 0 1000 300">
+                  <path d="M0,298 L1000,298" fill="none" stroke="#10b981" strokeLinecap="round" strokeWidth="3" />
+                </svg>
+              </div>
+            </div>
 
-            {/* Tombol Eksekusi Dinamis (Poin 3) */}
-            <div className="mt-8">
-              {!isOnline ? (
-                <button disabled className="w-full py-4 bg-[#8fa0b3] text-white font-bold rounded-xl flex justify-center items-center gap-2 opacity-90 cursor-not-allowed">
-                  <FiAlertCircle /> Koneksi Terputus
-                </button>
-              ) : !isPlantingActive ? (
-                <button onClick={handleStart} className="w-full py-4 bg-[#00c48c] hover:bg-emerald-500 text-white font-bold rounded-xl flex justify-center items-center gap-2 transition-colors">
-                  Mulai Pertumbuhan Otomatis
-                </button>
-              ) : (
-                <button onClick={handleStop} className="w-full py-4 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-bold rounded-xl flex justify-center items-center transition-colors">
-                  Selesaikan Pertumbuhan
-                </button>
-              )}
+            {/* Calibration Hub Card */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-4 md:p-6 flex flex-col gap-4 lg:col-span-1">
+              <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <path d="M14 17H5" />
+                    <path d="M19 7h-9" />
+                    <circle cx="17" cy="17" r="3" />
+                    <circle cx="7" cy="7" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-800">Pusat Kalibrasi</h3>
+                  <p className="text-[12px] text-slate-500">Pengingat fisik</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-800 uppercase">Sensor pH</span>
+                    <span className="text-[12px] text-red-600 font-medium">Perlu Kalibrasi</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">Terakhir: 30 hr lalu</span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-800 uppercase">Sensor TDS</span>
+                    <span className="text-[12px] text-emerald-500 font-medium">Akurat</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">Terakhir: 2 hr lalu</span>
+                </div>
+              </div>
+              <div className="mt-auto pt-2">
+                <p className="text-[11px] text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <span className="font-bold">Catatan:</span> Kalibrasi dilakukan manual via hardware. Ini hanya riwayat pemantauan.
+                </p>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
-
-    </div>
+    </main>
   );
 }
