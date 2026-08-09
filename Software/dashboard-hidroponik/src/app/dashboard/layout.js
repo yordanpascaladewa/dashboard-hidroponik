@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import Sidebar from '../Sidebar'; // Pastikan path ini benar
+import Sidebar from '../Sidebar'; 
 
 export default function DashboardLayout({ children }) {
   const [isNavOpen, setIsNavOpen] = useState(true);
@@ -14,8 +14,8 @@ export default function DashboardLayout({ children }) {
       {/* Panggil komponen Sidebar */}
       <Sidebar isNavOpen={isNavOpen} />
 
-      {/* HAPUS 'lg:' pada margin. Sekarang murni ml-60 saat buka, ml-0 saat tutup */}
-      <div className={`transition-all duration-300 ease-in-out flex flex-col min-h-screen ${isNavOpen ? 'ml-60' : 'ml-0'}`}>
+      {/* Pendorong Halman. Kalau buka margin kiri 64, kalau tutup margin 0 */}
+      <div className={`transition-all duration-300 ease-in-out flex flex-col min-h-screen ${isNavOpen ? 'ml-64' : 'ml-0'}`}>
         
         <header className="sticky top-0 h-16 bg-[#1f2021]/90 backdrop-blur-md z-40 flex items-center justify-between px-6 border-b border-[rgba(255,255,255,0.12)]">
           <div className="flex items-center gap-4">
@@ -30,10 +30,9 @@ export default function DashboardLayout({ children }) {
               </span>
             </button>
 
-            {/* Hapus 'hidden sm:flex' agar indikator online selalu muncul di semua layar */}
             <div className="flex items-center gap-2 px-3 py-1 bg-[#343536] rounded-full border border-[rgba(255,255,255,0.12)]">
               <span className="w-2 h-2 rounded-full bg-[#00dce5] animate-pulse shadow-[0_0_8px_rgba(0,220,229,0.6)]"></span>
-              <span className="font-mono text-[10px] text-[#e3e2e3] font-bold tracking-[0.1em] uppercase">SYSTEM ONLINE</span>
+              <span className="font-mono text-[10px] text-[#e3e2e3] font-bold tracking-[0.1em] uppercase hidden sm:block">SYSTEM ONLINE</span>
             </div>
           </div>
 
@@ -48,6 +47,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
+        {/* Konten Dashboard (page.js) bakal masuk sini */}
         {children}
 
       </div>
