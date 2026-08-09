@@ -1,3 +1,6 @@
+// Baris ini yang kemaren ketinggalan, Bos! Penyelamat styling Tailwind lu.
+import "./globals.css"; 
+
 export const metadata = {
   title: 'AeroGrow Pro - Telemetri',
   description: 'Sistem Monitoring dan Kontrol Nutrisi Hidroponik Real-time',
