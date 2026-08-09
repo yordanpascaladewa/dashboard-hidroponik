@@ -1,64 +1,57 @@
-'use client';
-
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  FiGrid, FiBarChart2, FiSliders, FiBookOpen, 
-  FiActivity, FiLogOut, FiHelpCircle, FiRefreshCw 
-} from 'react-icons/fi';
+import React from 'react';
 
 export default function Sidebar() {
-  const pathname = usePathname();
-  
-  // Sidebar gak akan muncul di halaman login
-  if (pathname === '/login' || pathname === '/') return null;
-
   return (
-    <aside className="w-[260px] bg-white border-r border-gray-100 hidden md:flex flex-col justify-between h-screen sticky top-0 p-5 shrink-0">
-      <div>
-        {/* Area Logo */}
-        <div className="flex items-center gap-3 mb-10 pl-2">
-          <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500 shadow-sm border border-red-100">
-            <FiActivity className="text-xl font-bold" />
-          </div>
-          <div>
-            <h1 className="font-extrabold text-gray-900 text-lg leading-tight">System Alpha</h1>
-            <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">Alat Terputus</p>
-          </div>
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+      
+      <aside className="fixed left-0 top-0 h-full w-72 bg-[#1f2021] border-r border-[rgba(255,255,255,0.12)] z-50 flex flex-col p-6">
+        
+        {/* Logo & Brand */}
+        <div className="flex items-center gap-3 mb-12">
+          <span className="material-symbols-outlined text-[#10B981] text-3xl">eco</span>
+          <span className="text-[24px] font-bold tracking-tighter text-[#ffffff]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            AeroGrow <span className="text-[#10B981]">Pro</span>
+          </span>
         </div>
 
-        {/* Menu Navigasi Sesuai Poin Rancangan Lu */}
-        <nav className="space-y-1.5">
-          <Link href="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${pathname === '/dashboard' ? 'bg-[#00c48c] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <FiGrid className="text-lg" /> Dashboard
-          </Link>
-          <Link href="/analytics" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${pathname === '/analytics' ? 'bg-[#00c48c] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <FiBarChart2 className="text-lg" /> Analytics
-          </Link>
-          <Link href="/command-center" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${pathname === '/command-center' ? 'bg-[#00c48c] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <FiSliders className="text-lg" /> Command Center
-          </Link>
-          <Link href="/growth-log" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${pathname === '/growth-log' ? 'bg-[#00c48c] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <FiBookOpen className="text-lg" /> Growth Log
-          </Link>
-          <Link href="/system-health" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${pathname === '/system-health' ? 'bg-[#00c48c] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <FiActivity className="text-lg" /> System Health
-          </Link>
+        {/* Navigation Links */}
+        <nav className="flex-1 space-y-2">
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-r-xl border-l-4 border-[#10B981] bg-[#10B981]/10 text-[#10B981] transition-all duration-300 shadow-[inset_4px_0_0_0_rgba(16,185,129,1)]">
+            <span className="material-symbols-outlined">dashboard</span>
+            <span className="text-[12px] uppercase tracking-[0.1em] font-bold" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Beranda</span>
+          </a>
+          
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-r-xl border-l-4 border-transparent transition-all duration-300 text-[#c8c8ac] hover:bg-[#292a2b] hover:text-[#ffffff]">
+            <span className="material-symbols-outlined">monitoring</span>
+            <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Analisis Data</span>
+          </a>
+          
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-r-xl border-l-4 border-transparent transition-all duration-300 text-[#c8c8ac] hover:bg-[#292a2b] hover:text-[#ffffff]">
+            <span className="material-symbols-outlined">settings_input_component</span>
+            <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Pusat Kendali</span>
+          </a>
+          
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-r-xl border-l-4 border-transparent transition-all duration-300 text-[#c8c8ac] hover:bg-[#292a2b] hover:text-[#ffffff]">
+            <span className="material-symbols-outlined">database</span>
+            <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Riwayat Tanam</span>
+          </a>
+          
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-r-xl border-l-4 border-transparent transition-all duration-300 text-[#c8c8ac] hover:bg-[#292a2b] hover:text-[#ffffff]">
+            <span className="material-symbols-outlined">health_and_safety</span>
+            <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Status Sistem</span>
+          </a>
         </nav>
-      </div>
 
-      {/* Area Tombol Bawah */}
-      <div className="space-y-2 pb-4">
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-emerald-600 bg-emerald-50 rounded-xl font-semibold transition-colors">
-          <FiRefreshCw className="text-lg" /> Export Data
-        </button>
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-500 hover:bg-gray-50 rounded-xl font-semibold transition-colors">
-          <FiHelpCircle className="text-lg" /> Support
-        </button>
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl font-semibold transition-colors mt-2">
-          <FiLogOut className="text-lg" /> Logout
-        </button>
-      </div>
-    </aside>
+        {/* Logout Button */}
+        <div className="mt-auto border-t border-[rgba(255,255,255,0.12)] pt-6">
+          <a href="#" className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 text-[#c8c8ac] hover:text-[#ffb4ab] hover:bg-[#93000a]/20">
+            <span className="material-symbols-outlined">logout</span>
+            <span className="text-[12px] uppercase tracking-[0.1em] font-bold" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Keluar Sesi</span>
+          </a>
+        </div>
+        
+      </aside>
+    </>
   );
 }
