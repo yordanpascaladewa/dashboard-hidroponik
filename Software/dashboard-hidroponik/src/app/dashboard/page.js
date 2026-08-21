@@ -1,25 +1,26 @@
-'use client'; // Wajib ditambahin di Next.js App Router buat pake useState & useEffect
+'use client'; 
 
 import React, { useState, useEffect } from 'react';
 
 export default function DashboardPage() {
-  // Bikin state buat nyimpen data dari database
+  // State untuk menampung data dari database
   const [telemetry, setTelemetry] = useState({
     suhu: 0,
     ph: 0,
     tds: 0,
     voltaseBaterai: 0,
-    energiSolar: 0 // Asumsi arus (mA) masuk ke sini
+    energiSolar: 0 
   });
 
-  // Fungsi buat ngambil data dari API
+  // Efek untuk ngambil data otomatis
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Manggil API lu (pastikan route-nya udah bener /api/telemetry)
         const res = await fetch('/api/telemetry', { cache: 'no-store' });
         const json = await res.json();
         
-        // Mengambil data terbaru (index 0) dari array hasil database
+        // Update state kalau datanya ada (ngambil data paling baru/index 0)
         if (json.data && json.data.length > 0) {
           setTelemetry(json.data[0]);
         }
@@ -28,21 +29,22 @@ export default function DashboardPage() {
       }
     };
 
-    // Panggil saat pertama kali web dibuka
+    // Tarik data pertama kali web dibuka
     fetchData();
 
-    // Setup interval biar web nge-refresh data otomatis tiap 1 menit (60000 ms)
-    // Biar lu ga perlu pencet F5 terus-terusan
-    const interval = setInterval(fetchData, 60000);
+    // TRIGGER AUTO-REFRESH DATA TIAP 10 DETIK (10000 ms)
+    // Ini yang bikin angkanya gerak sendiri tanpa perlu F5
+    const interval = setInterval(fetchData, 10000);
+    
+    // Bersihin interval kalau pindah halaman biar ga memory leak
     return () => clearInterval(interval);
   }, []);
 
   return (
     <main className="flex-1 w-full flex flex-col gap-10 p-6 md:p-12 relative">
       
-      {/* Title Section (Tetap sama) */}
+      {/* Title Section */}
       <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-end w-full mb-2">
-        {/* ... (bagian title tidak ada yang diubah) ... */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <span className="w-1.5 h-6 bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.8)] rounded-full"></span>
@@ -66,7 +68,6 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-[#63f7ff] text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>water_drop</span>
           </div>
           <div className="flex items-baseline gap-2">
-            {/* INI YANG DIGANTI: Nampilin data dari state */}
             <span className="text-5xl font-black text-[#ffffff] leading-none tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {telemetry.suhu ? telemetry.suhu.toFixed(1) : '--'}
             </span>
@@ -84,7 +85,6 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-[#10B981] text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>science</span>
           </div>
           <div className="flex items-baseline gap-2">
-            {/* INI YANG DIGANTI */}
             <span className="text-5xl font-black text-[#ffffff] leading-none tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {telemetry.ph ? telemetry.ph.toFixed(1) : '--'}
             </span>
@@ -102,7 +102,6 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined text-[#8B5CF6] text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>spa</span>
           </div>
           <div className="flex items-baseline gap-2">
-            {/* INI YANG DIGANTI */}
             <span className="text-5xl font-black text-[#ffffff] leading-none tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {telemetry.tds || '--'}
             </span>
@@ -113,7 +112,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Metric 4 - Fase (Contoh ini biarin manual dulu kalau ga dari database) */}
+        {/* Metric 4 - Fase Tumbuh (Statis sementara) */}
         <div className="bg-[#1f2021] rounded-xl p-6 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col justify-between h-[160px]">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Fase Tumbuh</span>
@@ -132,8 +131,68 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full mt-2">
         
-        {/* ... (Bagian Grafik Area Chart ga gua ubah biar ga kepanjangan) ... */}
-        
+        {/* Analytics Area Chart (Grafik) */}
+        <div className="lg:col-span-8 bg-[#1f2021] rounded-2xl p-8 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col gap-6">
+          <div className="flex justify-between items-center w-full border-b border-[rgba(255,255,255,0.12)] pb-4">
+            <h2 className="text-[20px] md:text-[24px] font-semibold text-[#ffffff] m-0 tracking-[-0.02em]" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Tren Kualitas Air <span className="text-[#e3e2e3] font-normal text-[14px] md:text-[16px] ml-2">(24 Jam Terakhir)</span>
+            </h2>
+            <div className="hidden sm:flex gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+                <span className="text-[12px] font-bold text-[#e3e2e3]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>pH Level</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#8B5CF6] shadow-[0_0_8px_rgba(139,92,246,0.6)]"></span>
+                <span className="text-[12px] font-bold text-[#e3e2e3]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>TDS (PPM)</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="w-full h-[320px] relative mt-4">
+            <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 300">
+              <defs>
+                <linearGradient id="ph-gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.3"></stop>
+                  <stop offset="100%" stopColor="#10B981" stopOpacity="0"></stop>
+                </linearGradient>
+                <linearGradient id="tds-gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.25"></stop>
+                  <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0"></stop>
+                </linearGradient>
+                <pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1"></path>
+                </pattern>
+              </defs>
+              <rect fill="url(#grid)" height="100%" width="100%"></rect>
+              
+              <line stroke="rgba(255,255,255,0.15)" strokeDasharray="4,4" strokeWidth="1" x1="0" x2="800" y1="240" y2="240"></line>
+              <line stroke="rgba(255,255,255,0.15)" strokeDasharray="4,4" strokeWidth="1" x1="0" x2="800" y1="160" y2="160"></line>
+              <line stroke="rgba(255,255,255,0.15)" strokeDasharray="4,4" strokeWidth="1" x1="0" x2="800" y1="80" y2="80"></line>
+              
+              <path d="M0,280 L0,200 C100,180 200,220 300,190 C400,160 500,210 600,150 C700,90 800,130 800,130 L800,280 Z" fill="url(#tds-gradient)"></path>
+              <path d="M0,200 C100,180 200,220 300,190 C400,160 500,210 600,150 C700,90 800,130 800,130" fill="none" stroke="#8B5CF6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4"></path>
+              
+              <path d="M0,280 L0,150 C150,140 250,90 400,110 C500,125 600,70 700,100 C750,115 800,80 800,80 L800,280 Z" fill="url(#ph-gradient)"></path>
+              <path d="M0,150 C150,140 250,90 400,110 C500,125 600,70 700,100 C750,115 800,80 800,80" fill="none" stroke="#10B981" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4"></path>
+              
+              <circle cx="400" cy="110" fill="#121315" r="6" stroke="#10B981" strokeWidth="3"></circle>
+              <circle cx="600" cy="70" fill="#121315" r="6" stroke="#10B981" strokeWidth="3"></circle>
+              <circle cx="300" cy="190" fill="#121315" r="6" stroke="#8B5CF6" strokeWidth="3"></circle>
+              <circle cx="600" cy="150" fill="#121315" r="6" stroke="#8B5CF6" strokeWidth="3"></circle>
+            </svg>
+            <div className="absolute bottom-[-15px] left-0 w-full flex justify-between px-2 pt-3 text-[10px] md:text-[12px] font-bold text-[#e3e2e3]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <span>00:00</span>
+              <span>04:00</span>
+              <span>08:00</span>
+              <span>12:00</span>
+              <span>16:00</span>
+              <span>20:00</span>
+              <span>NOW</span>
+            </div>
+          </div>
+        </div>
+
         {/* Hardware Status Panel */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           <div className="bg-[#1f2021] rounded-2xl p-8 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col gap-6 h-full relative overflow-hidden">
@@ -159,7 +218,6 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center gap-2 p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,255,255,0.12)] text-center">
                   <span className="text-[10px] md:text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Tegangan</span>
                   <div className="flex items-baseline gap-1">
-                    {/* INI YANG DIGANTI */}
                     <span className="text-[24px] md:text-[28px] font-black text-[#63f7ff]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {telemetry.voltaseBaterai ? telemetry.voltaseBaterai.toFixed(1) : '--'}
                     </span>
@@ -169,7 +227,6 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center gap-2 p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,255,255,0.12)] text-center">
                   <span className="text-[10px] md:text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Arus</span>
                   <div className="flex items-baseline gap-1">
-                    {/* INI YANG DIGANTI */}
                     <span className="text-[24px] md:text-[28px] font-black text-[#63f7ff]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                       {telemetry.energiSolar || '--'}
                     </span>
@@ -183,7 +240,70 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* ... (Bagian Calibration Hub ke bawah tetep sama, ga perlu diubah dulu) ... */}
+      {/* Calibration Hub Area */}
+      <div className="w-full bg-[#1f2021] rounded-2xl p-8 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col gap-6 mt-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center w-full border-b border-[rgba(255,255,255,0.12)] pb-4 gap-4">
+          <h3 className="text-[20px] md:text-[24px] font-semibold text-[#ffffff] m-0 flex items-center gap-3 tracking-[-0.02em]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Calibration Hub
+            <span className="px-3 py-1 bg-[#343536] rounded-full border border-[rgba(255,255,255,0.12)] text-[10px] md:text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              3 Sensors Online
+            </span>
+          </h3>
+          <button className="px-5 py-2.5 bg-[#10B981] text-[#0d0e0f] text-[12px] rounded-lg hover:bg-[#10B981]/90 transition-colors duration-300 uppercase tracking-[0.1em] font-bold shadow-[0_0_15px_rgba(16,185,129,0.4)]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            Run Diagnostics
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Temp Sensor */}
+          <div className="p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,255,255,0.12)] hover:bg-[#343536] transition-colors flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-[#343536] border border-[rgba(255,255,255,0.12)] flex items-center justify-center relative">
+                <span className="material-symbols-outlined text-[#63f7ff] text-[20px]">thermostat</span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.8)] border-2 border-[#292a2b]"></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[14px] md:text-[16px] font-bold text-[#ffffff]" style={{ fontFamily: 'Inter, sans-serif' }}>Sensor Suhu Air</span>
+                <span className="text-[10px] md:text-[12px] text-[#e3e2e3] font-semibold tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Last cal: 14 days ago</span>
+              </div>
+            </div>
+            <span className="text-[10px] md:text-[12px] text-[#10B981] font-bold uppercase tracking-[0.1em] px-3 py-1 bg-[#10B981]/10 rounded-full border border-[#10B981]/30" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Akurat</span>
+          </div>
+
+          {/* pH Sensor */}
+          <div className="p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,180,171,0.3)] hover:bg-[#343536] transition-colors flex items-center justify-between relative overflow-hidden">
+            <div className="absolute inset-0 bg-[#ffb4ab]/10"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-10 h-10 rounded-full bg-[#343536] border border-[rgba(255,255,255,0.12)] flex items-center justify-center relative">
+                <span className="material-symbols-outlined text-[#10B981] text-[20px]">science</span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#ffb4ab] shadow-[0_0_8px_rgba(255,180,171,0.8)] border-2 border-[#292a2b] animate-pulse"></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[14px] md:text-[16px] font-bold text-[#ffffff]" style={{ fontFamily: 'Inter, sans-serif' }}>Probe pH</span>
+                <span className="text-[10px] md:text-[12px] text-[#e3e2e3] font-semibold tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Last cal: 45 days ago</span>
+              </div>
+            </div>
+            <span className="text-[10px] md:text-[12px] text-[#ffb4ab] font-bold uppercase tracking-[0.1em] px-3 py-1 bg-[#ffb4ab]/10 rounded-full border border-[rgba(255,180,171,0.3)] relative z-10" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Perlu Kalibrasi</span>
+          </div>
+
+          {/* TDS Sensor */}
+          <div className="p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,255,255,0.12)] hover:bg-[#343536] transition-colors flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-[#343536] border border-[rgba(255,255,255,0.12)] flex items-center justify-center relative">
+                <span className="material-symbols-outlined text-[#8B5CF6] text-[20px]">water_ph</span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.8)] border-2 border-[#292a2b]"></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[14px] md:text-[16px] font-bold text-[#ffffff]" style={{ fontFamily: 'Inter, sans-serif' }}>TDS Meter</span>
+                <span className="text-[10px] md:text-[12px] text-[#e3e2e3] font-semibold tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Last cal: 5 days ago</span>
+              </div>
+            </div>
+            <span className="text-[10px] md:text-[12px] text-[#10B981] font-bold uppercase tracking-[0.1em] px-3 py-1 bg-[#10B981]/10 rounded-full border border-[#10B981]/30" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Akurat</span>
+          </div>
+
+        </div>
+      </div>
 
     </main>
   );
