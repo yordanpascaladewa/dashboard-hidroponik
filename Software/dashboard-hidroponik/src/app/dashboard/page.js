@@ -3,24 +3,23 @@
 import React, { useState, useEffect } from 'react';
 
 export default function DashboardPage() {
-  // State untuk menampung data dari database
+  // State diperbarui buat nampung data usia_hari dan tanaman dari ESP32
   const [telemetry, setTelemetry] = useState({
     suhu: 0,
     ph: 0,
     tds: 0,
     voltaseBaterai: 0,
-    energiSolar: 0 
+    energiSolar: 0,
+    usia_hari: 0,
+    tanaman: 'STANDBY' 
   });
 
-  // Efek untuk ngambil data otomatis
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Manggil API lu (pastikan route-nya udah bener /api/telemetry)
         const res = await fetch('/api/telemetry', { cache: 'no-store' });
         const json = await res.json();
         
-        // Update state kalau datanya ada (ngambil data paling baru/index 0)
         if (json.data && json.data.length > 0) {
           setTelemetry(json.data[0]);
         }
@@ -29,14 +28,10 @@ export default function DashboardPage() {
       }
     };
 
-    // Tarik data pertama kali web dibuka
     fetchData();
 
-    // TRIGGER AUTO-REFRESH DATA TIAP 10 DETIK (10000 ms)
-    // Ini yang bikin angkanya gerak sendiri tanpa perlu F5
+    // Auto-refresh tetep 10 detik biar cepet dan responsif
     const interval = setInterval(fetchData, 10000);
-    
-    // Bersihin interval kalau pindah halaman biar ga memory leak
     return () => clearInterval(interval);
   }, []);
 
@@ -112,14 +107,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Metric 4 - Fase Tumbuh (Statis sementara) */}
+        {/* Metric 4 - Fase Tumbuh (Sekarang Udah Dinamis dari ESP) */}
         <div className="bg-[#1f2021] rounded-xl p-6 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col justify-between h-[160px]">
           <div className="flex justify-between items-start">
             <span className="text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Fase Tumbuh</span>
             <span className="material-symbols-outlined text-[#dfed1a] text-[28px]" style={{ fontVariationSettings: '"FILL" 1' }}>calendar_month</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-black text-[#ffffff] leading-none tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>14</span>
+            <span className="text-5xl font-black text-[#ffffff] leading-none tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {telemetry.usia_hari || 0}
+            </span>
             <span className="text-[16px] text-[#dfed1a] font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>Hari</span>
           </div>
           <div className="w-full h-1 bg-[#343536] rounded-full mt-2 relative overflow-hidden">
@@ -131,7 +128,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full mt-2">
         
-        {/* Analytics Area Chart (Grafik) */}
+        {/* Analytics Area Chart */}
         <div className="lg:col-span-8 bg-[#1f2021] rounded-2xl p-8 border border-[rgba(255,255,255,0.12)] shadow-sm flex flex-col gap-6">
           <div className="flex justify-between items-center w-full border-b border-[rgba(255,255,255,0.12)] pb-4">
             <h2 className="text-[20px] md:text-[24px] font-semibold text-[#ffffff] m-0 tracking-[-0.02em]" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -207,7 +204,10 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between p-5 bg-[#292a2b] rounded-xl border border-[rgba(255,255,255,0.12)] z-10">
                 <div className="flex flex-col gap-1">
                   <span className="text-[12px] font-bold text-[#ffffff] uppercase tracking-[0.1em]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Komoditas</span>
-                  <span className="text-[24px] md:text-[28px] font-black text-[#ffffff] tracking-[0.1em] leading-none uppercase" style={{ fontFamily: "'JetBrains Mono', monospace" }}>Selada</span>
+                  {/* INI YANG DIGANTI JADI DINAMIS */}
+                  <span className="text-[24px] md:text-[28px] font-black text-[#ffffff] tracking-[0.1em] leading-none uppercase" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {telemetry.tanaman || 'STANDBY'}
+                  </span>
                 </div>
                 <div className="w-12 h-12 rounded-full border border-[rgba(255,255,255,0.12)] flex items-center justify-center bg-[#343536] shadow-sm">
                   <span className="material-symbols-outlined text-[#dfed1a] text-[24px]" style={{ fontVariationSettings: '"FILL" 1' }}>grass</span>
