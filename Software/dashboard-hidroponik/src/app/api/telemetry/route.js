@@ -3,7 +3,6 @@ import connectMongoDB from '../../../lib/mongodb';
 import Telemetry from '../../../models/Telemetry';
 
 export const dynamic = 'force-dynamic';
-// Tambahan wajib biar fungsi GET bener-bener narik data baru tiap detik (nggak kena cache)
 export const fetchCache = 'force-no-store'; 
 
 export async function GET() {
@@ -23,7 +22,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     
-    // Tangkap SEMUA data yang dikirim dari payload JSON ESP32
+    // Menangkap data secara komprehensif dari payload ESP32
     const { 
       suhu, 
       ph, 
@@ -33,12 +32,14 @@ export async function POST(request) {
       usia_hari,
       tanaman,
       raw_volt_ph,
-      raw_volt_tds
+      raw_volt_tds,
+      raw_adc_ph,
+      raw_adc_tds
     } = body;
     
     await connectMongoDB();
     
-    // Simpan semua data tersebut ke MongoDB sesuai laci schema yang baru
+    // Menyimpan data lengkap ke MongoDB
     const newData = await Telemetry.create({ 
       suhu, 
       ph, 
@@ -48,7 +49,9 @@ export async function POST(request) {
       usia_hari,
       tanaman,
       raw_volt_ph,
-      raw_volt_tds
+      raw_volt_tds,
+      raw_adc_ph,
+      raw_adc_tds
     });
     
     return NextResponse.json(
