@@ -26,7 +26,6 @@ export default function DashboardPage() {
           const latest = json.data[0];
           setTelemetry(latest);
           
-          // PERBAIKAN 1: Tambahkan 'second: 2-digit' agar setiap 10 detik punya label unik di X-Axis
           const history = json.data.slice(0, 20).reverse().map(item => ({
             waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { 
               hour: '2-digit', 
@@ -52,34 +51,42 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <main className="flex-1 w-full flex flex-col gap-10 p-6 md:p-12 bg-[#121315] min-h-screen text-white">
-      <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-end w-full mb-2">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <span className="w-1.5 h-8 bg-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.8)] rounded-full"></span>
-            <h1 className="text-[32px] md:text-[42px] font-bold tracking-tight">System Overview</h1>
+    // Gap diperkecil dari gap-10 jadi gap-6 biar konten lebih naik
+    <main className="flex-1 w-full flex flex-col gap-6 p-6 md:p-8 bg-[#121315] min-h-screen text-white">
+      
+      {/* Bagian Header Diperkecil */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center w-full mb-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            {/* Indikator hijau dikecilin */}
+            <span className="w-1 h-5 bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.8)] rounded-full"></span>
+            {/* Ukuran text dikurangin dari text-[42px] jadi text-2xl */}
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-200">System Overview</h1>
           </div>
-          <p className="text-[14px] text-slate-400 uppercase tracking-widest font-mono">AeroGrow Pro // Node 04 // Live Telemetry</p>
+          <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono">AeroGrow Pro // Node 04 // Live Telemetry</p>
         </div>
-        <div className="flex items-center gap-3 bg-[#1f2021] px-4 py-2 rounded-full border border-white/10">
-          <div className={`w-2 h-2 rounded-full ${telemetry.tanaman !== 'STANDBY' ? 'bg-[#10B981] animate-pulse' : 'bg-slate-500'}`}></div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+        <div className="flex items-center gap-2 bg-[#1f2021] px-3 py-1.5 rounded-full border border-white/10">
+          <div className={`w-1.5 h-1.5 rounded-full ${telemetry.tanaman !== 'STANDBY' ? 'bg-[#10B981] animate-pulse' : 'bg-slate-500'}`}></div>
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-300">
             {telemetry.tanaman !== 'STANDBY' ? 'System Online' : 'System Standby'}
           </span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-        <MetricCard label="Suhu Air" value={telemetry.suhu ? telemetry.suhu.toFixed(1) : '--'} unit="°C" icon={<Thermometer size={24}/>} color="#63f7ff" progress={(telemetry.suhu / 40) * 100} />
-        <MetricCard label="Tingkat pH" value={telemetry.ph ? telemetry.ph.toFixed(1) : '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" progress={(telemetry.ph / 14) * 100} />
-        <MetricCard label="Nutrisi (TDS)" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24}/>} color="#8B5CF6" progress={(telemetry.tds / 2000) * 100} />
-        <MetricCard label="Fase Tumbuh" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={24}/>} color="#dfed1a" progress={Math.min((telemetry.usia_hari / 30) * 100, 100)} />
+        <MetricCard label="Suhu Air" value={telemetry.suhu ? telemetry.suhu.toFixed(1) : '--'} unit="°C" icon={<Thermometer size={20}/>} color="#63f7ff" progress={(telemetry.suhu / 40) * 100} />
+        <MetricCard label="Tingkat pH" value={telemetry.ph ? telemetry.ph.toFixed(1) : '--'} unit="pH" icon={<FlaskConical size={20}/>} color="#10B981" progress={(telemetry.ph / 14) * 100} />
+        <MetricCard label="Nutrisi (TDS)" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={20}/>} color="#8B5CF6" progress={(telemetry.tds / 2000) * 100} />
+        <MetricCard label="Fase Tumbuh" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={20}/>} color="#dfed1a" progress={Math.min((telemetry.usia_hari / 30) * 100, 100)} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
-        <div className="lg:col-span-8 bg-[#1f2021] rounded-2xl p-8 border border-white/10 flex flex-col gap-8 min-h-[450px]">
-          <div className="flex justify-between items-center w-full border-b border-white/5 pb-6">
-            <div><h2 className="text-xl font-bold">Tren Kualitas Air</h2><p className="text-sm text-slate-500 mt-1 font-mono uppercase">Live Telemetry Data (10s Interval)</p></div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+        <div className="lg:col-span-8 bg-[#1f2021] rounded-2xl p-6 border border-white/10 flex flex-col gap-6 min-h-[400px]">
+          <div className="flex justify-between items-center w-full border-b border-white/5 pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-200">Tren Kualitas Air</h2>
+              <p className="text-xs text-slate-500 mt-1 font-mono uppercase">Live Telemetry Data (10s Interval)</p>
+            </div>
           </div>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -93,7 +100,6 @@ export default function DashboardPage() {
                 <YAxis yId="left" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[0, 14]} />
                 <YAxis yId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[0, 2000]} />
                 <Tooltip contentStyle={{ backgroundColor: '#1f2021', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                {/* PERBAIKAN 2: Tambahkan isAnimationActive={false} supaya re-render mulus */}
                 <Area isAnimationActive={false} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
                 <Area isAnimationActive={false} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
               </AreaChart>
@@ -102,21 +108,23 @@ export default function DashboardPage() {
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-[#1f2021] rounded-2xl p-8 border border-white/10 flex flex-col gap-8 h-full relative overflow-hidden">
-            <h3 className="text-xl font-bold tracking-tight flex items-center justify-between border-b border-white/5 pb-6">Hardware Status <MemoryStick className="text-slate-500" size={20} /></h3>
-            <div className="flex flex-col gap-6">
-              <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 font-mono">Current Commodity</span>
+          <div className="bg-[#1f2021] rounded-2xl p-6 border border-white/10 flex flex-col gap-6 h-full relative overflow-hidden">
+            <h3 className="text-lg font-bold tracking-tight flex items-center justify-between border-b border-white/5 pb-4 text-slate-200">
+              Hardware Status <MemoryStick className="text-slate-500" size={18} />
+            </h3>
+            <div className="flex flex-col gap-5">
+              <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 font-mono">Current Commodity</span>
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black tracking-widest uppercase font-mono">{telemetry.tanaman || 'STANDBY'}</span>
-                  <Activity className="text-[#dfed1a]" size={24} />
+                  <span className="text-2xl font-black tracking-widest uppercase font-mono">{telemetry.tanaman || 'STANDBY'}</span>
+                  <Activity className="text-[#dfed1a]" size={20} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <PowerMetric label="Tegangan" value={telemetry.voltaseBaterai?.toFixed(1) || '--'} unit="V" color="#63f7ff" />
                 <PowerMetric label="Arus" value={telemetry.energiSolar || '--'} unit="mA" color="#63f7ff" />
               </div>
-              <button className="w-full mt-auto py-5 bg-[#10B981] text-[#0d0e0f] rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all">Run Diagnostics</button>
+              <button className="w-full mt-auto py-4 bg-[#10B981] text-[#0d0e0f] rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-all">Run Diagnostics</button>
             </div>
           </div>
         </div>
@@ -127,16 +135,16 @@ export default function DashboardPage() {
 
 function MetricCard({ label, value, unit, icon, color, progress }) {
   return (
-    <div className="bg-[#1f2021] rounded-2xl p-6 border border-white/10 shadow-lg flex flex-col justify-between h-[180px] hover:border-white/20 transition-all">
+    <div className="bg-[#1f2021] rounded-2xl p-5 border border-white/10 shadow-lg flex flex-col justify-between h-[160px] hover:border-white/20 transition-all">
       <div className="flex justify-between items-start">
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono">{label}</span>
         <div style={{ color: color }}>{icon}</div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-5xl font-black font-mono">{value}</span>
-        <span className="text-sm font-bold text-slate-500" style={{ color: color }}>{unit}</span>
+      <div className="flex items-baseline gap-2 mt-2">
+        <span className="text-4xl font-black font-mono">{value}</span>
+        <span className="text-xs font-bold text-slate-500" style={{ color: color }}>{unit}</span>
       </div>
-      <div className="w-full h-1 bg-white/5 rounded-full relative overflow-hidden">
+      <div className="w-full h-1 bg-white/5 rounded-full relative overflow-hidden mt-4">
         <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%`, backgroundColor: color, boxShadow: `0 0 10px ${color}` }}></div>
       </div>
     </div>
@@ -145,9 +153,12 @@ function MetricCard({ label, value, unit, icon, color, progress }) {
 
 function PowerMetric({ label, value, unit, color }) {
   return (
-    <div className="flex flex-col items-center gap-2 p-5 bg-white/5 rounded-2xl border border-white/5 text-center">
-      <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">{label}</span>
-      <div className="flex items-baseline gap-1"><span className="text-2xl font-black font-mono" style={{ color: color }}>{value}</span><span className="text-[10px] font-bold" style={{ color: color }}>{unit}</span></div>
+    <div className="flex flex-col items-center gap-1 p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+      <span className="text-[9px] font-bold text-slate-400 uppercase font-mono">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className="text-xl font-black font-mono" style={{ color: color }}>{value}</span>
+        <span className="text-[10px] font-bold" style={{ color: color }}>{unit}</span>
+      </div>
     </div>
   );
 }
