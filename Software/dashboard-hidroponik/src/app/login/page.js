@@ -47,7 +47,7 @@ export default function LoginPage() {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
-              Universal Hydroponic <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">System V5</span>
+              Sistem Hidroponik<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
             </h1>
             
             <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12">
