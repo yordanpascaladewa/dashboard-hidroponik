@@ -6,7 +6,6 @@ import { Menu, Search, Bell, User } from 'lucide-react';
 export default function MainLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Otomatis tutup sidebar kalau dibuka di HP agar tidak kepotong
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -21,7 +20,7 @@ export default function MainLayout({ children }) {
   return (
     <div className="flex bg-[#121315] h-[100dvh] text-white font-sans overflow-hidden relative">
       
-      {/* BACKDROP GELAP KHUSUS HP (Muncul pas sidebar kebuka di mobile) */}
+      {/* BACKDROP GELAP KHUSUS HP */}
       {isSidebarOpen && (
         <div 
           onClick={() => setIsSidebarOpen(false)} 
@@ -33,13 +32,13 @@ export default function MainLayout({ children }) {
       <div className={`fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out shrink-0 bg-[#121315] ${
         isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden'
       }`}>
-        <Sidebar />
+        <Sidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
       
       {/* KONTEN UTAMA SISI KANAN */}
       <div className="flex-1 flex flex-col h-[100dvh] min-w-0 overflow-hidden">
         
-        {/* TOPBAR / NAVBAR ATAS (STUCK / KUNCI DI ATAS) */}
+        {/* TOPBAR / NAVBAR ATAS */}
         <header className="h-[90px] flex items-center justify-between px-6 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0">
           <div className="flex items-center gap-4 md:gap-6">
             <button 
@@ -69,7 +68,7 @@ export default function MainLayout({ children }) {
           </div>
         </header>
 
-        {/* AREA HALAMAN YANG BISA DI-SCROLL (Hanya isinya saja yang scroll) */}
+        {/* AREA HALAMAN */}
         <div className="flex-1 overflow-y-auto bg-[#121315]">
           {children}
         </div>

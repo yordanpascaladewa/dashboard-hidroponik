@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, BarChart3, Cpu, LogOut, Sprout } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -12,6 +12,13 @@ export default function Sidebar() {
     { name: 'ANALISIS DATA', icon: <BarChart3 size={22} />, path: '/analytics' },
     { name: 'STATUS SISTEM', icon: <Cpu size={22} />, path: '/hardware-status' },
   ];
+
+  const handleMenuClick = () => {
+    // Otomatis nutup sidebar kalau dibuka di layar HP (< 1024px)
+    if (window.innerWidth < 1024 && onClose) {
+      onClose();
+    }
+  };
 
   return (
     <aside className="w-[280px] h-screen bg-[#121315] border-r border-white/5 flex flex-col">
@@ -26,7 +33,7 @@ export default function Sidebar() {
         {menuItems.map((item) => {
           const isActive = pathname === item.path;
           return (
-            <Link key={item.name} href={item.path}>
+            <Link key={item.name} href={item.path} onClick={handleMenuClick}>
               <div className={`flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all ${
                 isActive 
                   ? 'bg-white/5 border-l-4 border-[#10B981] text-[#10B981]' 
@@ -42,7 +49,10 @@ export default function Sidebar() {
 
       <div className="p-8 border-t border-white/5 shrink-0">
         <button 
-          onClick={() => router.push('/login')}
+          onClick={() => {
+            handleMenuClick();
+            router.push('/login');
+          }}
           className="flex items-center gap-4 text-slate-400 hover:text-red-500 hover:bg-white/5 p-4 rounded-xl transition-all w-full cursor-pointer"
         >
           <LogOut size={22} />
