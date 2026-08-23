@@ -151,11 +151,13 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* KOTAK GRAFIK ANALISIS HISTORIS */}
-      <div className="bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
-        <h2 className="text-lg font-bold mb-2">Grafik Tren Historis ({activeTab})</h2>
+      {/* KOTAK GRAFIK ANALISIS HISTORIS (FIXED HEIGHT) */}
+      <div className="bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg flex flex-col">
+        <h2 className="text-lg font-bold mb-1">Grafik Tren Historis ({activeTab})</h2>
         <p className="text-xs text-slate-400 mb-6 font-mono">Visualisasi data akumulasi dari database MongoDB Atlas</p>
-        <div className="flex-1 w-full h-[320px]">
+        
+        {/* Tinggi container diset secara eksplisit agar Recharts merender dengan sempurna */}
+        <div className="w-full h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
