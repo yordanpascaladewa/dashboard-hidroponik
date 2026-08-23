@@ -60,7 +60,7 @@ export default function LoginPage() {
               onClick={() => setIsLoginOpen(true)}
               className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
             >
-              <LogIn size={20} /> Masuk ke Dashboard
+              <LogIn size={20} /> Login
             </button>
             
           </div>
