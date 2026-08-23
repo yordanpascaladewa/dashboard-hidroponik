@@ -19,7 +19,7 @@ export default function MainLayout({ children }) {
   }, []);
 
   return (
-    <div className="flex bg-[#121315] h-screen text-white font-sans overflow-hidden relative">
+    <div className="flex bg-[#121315] h-[100dvh] text-white font-sans overflow-hidden relative">
       
       {/* BACKDROP GELAP KHUSUS HP (Muncul pas sidebar kebuka di mobile) */}
       {isSidebarOpen && (
@@ -29,7 +29,7 @@ export default function MainLayout({ children }) {
         />
       )}
 
-      {/* SIDEBAR (Responsive: Fixed di HP, Normal flex di Desktop) */}
+      {/* SIDEBAR */}
       <div className={`fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out shrink-0 bg-[#121315] ${
         isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden'
       }`}>
@@ -37,10 +37,10 @@ export default function MainLayout({ children }) {
       </div>
       
       {/* KONTEN UTAMA SISI KANAN */}
-      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col h-[100dvh] min-w-0 overflow-hidden">
         
-        {/* TOPBAR / NAVBAR ATAS */}
-        <header className="h-[90px] flex items-center justify-between px-6 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-20">
+        {/* TOPBAR / NAVBAR ATAS (STUCK / KUNCI DI ATAS) */}
+        <header className="h-[90px] flex items-center justify-between px-6 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0">
           <div className="flex items-center gap-4 md:gap-6">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -69,7 +69,7 @@ export default function MainLayout({ children }) {
           </div>
         </header>
 
-        {/* AREA HALAMAN YANG BISA DI-SCROLL */}
+        {/* AREA HALAMAN YANG BISA DI-SCROLL (Hanya isinya saja yang scroll) */}
         <div className="flex-1 overflow-y-auto bg-[#121315]">
           {children}
         </div>
