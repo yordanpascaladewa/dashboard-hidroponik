@@ -1,70 +1,149 @@
 'use client';
-import React from 'react';
-import { X, Sprout } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Sprout, LogIn, Cpu, Globe, Server } from 'lucide-react';
 
 export default function LoginPage() {
+  // State untuk mengontrol pop-up modal login
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
   return (
     <div 
-      className="min-h-screen flex items-center justify-center relative bg-cover bg-center"
-      // TODO: Ganti URL di bawah dengan path foto background lu (misal: '/bg-panel.jpg')
+      className="min-h-screen relative bg-cover bg-center overflow-hidden"
+      // TODO: Ganti URL di bawah dengan path foto background alat hidroponik lu
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1558449028-b53a39d100fc?q=80&w=2000&auto=format&fit=crop')" }}
     >
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+      {/* Dark Overlay untuk meredupkan foto background */}
+      <div className={`absolute inset-0 transition-all duration-500 ${isLoginOpen ? 'bg-black/70 backdrop-blur-sm' : 'bg-black/60'}`}></div>
 
-      {/* Modal Container: Diperkecil dikit max-w nya karena isinya lebih padat/sedikit */}
-      <div className="relative z-10 w-full max-w-[480px] bg-black sm:rounded-[2rem] p-6 sm:p-10 min-h-screen sm:min-h-0 flex flex-col shadow-2xl border border-white/10">
+      {/* ========================================== */}
+      {/* 1. HEADER (LOGO & TOMBOL LOGIN ICON)         */}
+      {/* ========================================== */}
+      <header className="relative z-10 flex justify-between items-center px-8 py-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center gap-2">
+          <Sprout size={28} className="text-[#10B981]" />
+          <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
+        </div>
         
-        {/* Header: Tombol Close & Logo */}
-        <div className="flex items-center justify-between mb-10 w-full">
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white">
-            <X size={20} />
+        {/* Icon Login di Kanan Atas */}
+        {!isLoginOpen && (
+          <button 
+            onClick={() => setIsLoginOpen(true)}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2.5 rounded-full font-semibold transition-all backdrop-blur-md"
+          >
+            <LogIn size={18} />
+            <span>Login Sistem</span>
           </button>
-          
-          <div className="flex-1 flex justify-center mr-8">
-            <Sprout size={36} className="text-[#10B981]" />
+        )}
+      </header>
+
+      {/* ========================================== */}
+      {/* 2. LANDING PAGE CONTENT (TENTANG SISTEM)     */}
+      {/* ========================================== */}
+      {!isLoginOpen && (
+        <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-6 text-center animate-in fade-in zoom-in duration-700">
+          <div className="max-w-4xl mx-auto flex flex-col items-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-[#10B981] text-sm font-semibold tracking-widest uppercase mb-6 backdrop-blur-md">
+              Tugas Akhir Teknik Elektro UNDIP
+            </div>
+            
+            <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
+              Universal Hydroponic <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">System V5</span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12">
+              Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
+            </p>
+
+            {/* Fitur Highlights */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12">
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
+                <Cpu size={32} className="text-[#10B981] mb-4" />
+                <h3 className="text-white font-bold mb-2">ESP32 Dual-Core</h3>
+                <p className="text-sm text-gray-400">Multitasking stabil dengan FreeRTOS & filter ADC.</p>
+              </div>
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
+                <Globe size={32} className="text-[#3b82f6] mb-4" />
+                <h3 className="text-white font-bold mb-2">Next.js Dashboard</h3>
+                <p className="text-sm text-gray-400">Antarmuka web interaktif tanpa full-page reload.</p>
+              </div>
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
+                <Server size={32} className="text-[#8b5cf6] mb-4" />
+                <h3 className="text-white font-bold mb-2">MongoDB Atlas</h3>
+                <p className="text-sm text-gray-400">Penyimpanan telemetri yang aman dan terstruktur.</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setIsLoginOpen(true)}
+              className="bg-[#10B981] hover:bg-[#059669] text-black font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+            >
+              <LogIn size={20} /> Masuk ke Dashboard
+            </button>
+          </div>
+        </main>
+      )}
+
+      {/* ========================================== */}
+      {/* 3. MODAL POP-UP LOGIN                        */}
+      {/* ========================================== */}
+      {isLoginOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
+          <div className="w-full max-w-[480px] bg-black sm:rounded-[2rem] p-6 sm:p-10 flex flex-col shadow-2xl border border-white/10 relative">
+            
+            {/* Tombol Close (Silang) */}
+            <div className="flex items-center justify-between mb-10 w-full">
+              <button 
+                onClick={() => setIsLoginOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="flex-1 flex justify-center mr-8">
+                <Sprout size={36} className="text-[#10B981]" />
+              </div>
+            </div>
+
+            {/* Form Content Wrapper */}
+            <div className="w-full max-w-[320px] mx-auto flex flex-col pb-8">
+              <h1 className="text-[32px] font-bold text-white mb-8 tracking-tight">
+                Sign in to AeroGrow
+              </h1>
+              
+              {/* Form Input */}
+              <form className="flex flex-col gap-5">
+                <div>
+                  <input 
+                    type="text" 
+                    id="username"
+                    placeholder="Username" 
+                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <input 
+                    type="password" 
+                    id="password"
+                    placeholder="Password" 
+                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
+                    required
+                  />
+                </div>
+                
+                <button 
+                  type="submit"
+                  className="w-full bg-white text-black py-3.5 mt-4 rounded-full font-bold hover:bg-gray-200 transition-colors text-[15px]"
+                >
+                  Log in
+                </button>
+              </form>
+
+            </div>
           </div>
         </div>
-
-        {/* Form Content Wrapper */}
-        <div className="w-full max-w-[320px] mx-auto flex flex-col pb-8">
-          <h1 className="text-[32px] font-bold text-white mb-8 tracking-tight">
-            Sign in to AeroGrow
-          </h1>
-          
-          {/* Form Input (Murni Username & Password) */}
-          <form className="flex flex-col gap-5">
-            <div>
-              <input 
-                type="text" 
-                id="username"
-                placeholder="Username" 
-                className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
-                required
-              />
-            </div>
-            
-            <div>
-              <input 
-                type="password" 
-                id="password"
-                placeholder="Password" 
-                className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
-                required
-              />
-            </div>
-            
-            {/* Tombol Login */}
-            <button 
-              type="submit"
-              className="w-full bg-white text-black py-3.5 mt-4 rounded-full font-bold hover:bg-gray-200 transition-colors text-[15px]"
-            >
-              Log in
-            </button>
-          </form>
-
-        </div>
-      </div>
+      )}
     </div>
   );
 }
