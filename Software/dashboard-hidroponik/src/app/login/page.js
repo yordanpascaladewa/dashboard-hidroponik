@@ -45,7 +45,7 @@ export default function LoginPage() {
           <div className="max-w-4xl mx-auto flex flex-col items-center mt-12">
             
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1f2021] border border-white/10 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-8 shadow-lg">
-              Tugas Akhir Teknik Elektro UNDIP
+              Tugas Akhir Teknik Elektro Universitas Diponegoro
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
