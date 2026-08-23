@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { X, Sprout, LogIn, Cpu, Globe, Server } from 'lucide-react';
 
 export default function LoginPage() {
-  // State untuk mengontrol pop-up modal login
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
@@ -18,7 +17,8 @@ export default function LoginPage() {
       {/* ========================================== */}
       {/* 1. HEADER (LOGO & TOMBOL LOGIN ICON)         */}
       {/* ========================================== */}
-      <header className="relative z-10 flex justify-between items-center px-8 py-6 max-w-7xl mx-auto w-full">
+      {/* Perubahan: max-w-7xl dihapus, diganti w-full dan padding px-6 md:px-16 */}
+      <header className="relative z-10 flex justify-between items-center w-full px-6 md:px-16 py-6">
         <div className="flex items-center gap-2">
           <Sprout size={28} className="text-[#10B981]" />
           <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
