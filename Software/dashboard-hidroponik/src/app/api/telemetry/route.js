@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import connectMongoDB from '../../../lib/mongodb';
 import Telemetry from '../../../models/Telemetry';
 
+// Inisialisasi memori global untuk antrean command (Remote Control)
+if (typeof global.pendingCommand === 'undefined') {
+  global.pendingCommand = null;
+}
+
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store'; 
 
@@ -40,7 +45,7 @@ export async function POST(request) {
     await connectMongoDB();
     
     // Menyimpan data lengkap ke MongoDB
-    const newData = await Telemetry.create({ 
+    await Telemetry.create({ 
       suhu, 
       ph, 
       tds, 
@@ -53,11 +58,32 @@ export async function POST(request) {
       raw_adc_ph,
       raw_adc_tds
     });
+
+    // ==========================================
+    // LOGIKA REMOTE CONTROL UNTUK ESP32
+    // ==========================================
+    // Cek apakah ada command ngantre dari Dashboard Web
+    const commandData = global.pendingCommand 
+      ? global.pendingCommand 
+      : { command: "NONE", tanaman: "STANDBY", usia: 0 };
     
+    // Hapus command dari antrean setelah dibaca supaya tidak tereksekusi berkali-kali
+    if (global.pendingCommand) {
+      global.pendingCommand = null; 
+    }
+
+    // Kembalikan response JSON ke ESP32. 
+    // Dibuat ringan (hanya command) agar memori StaticJsonDocument<256> di ESP32 tidak over-limit
     return NextResponse.json(
-      { status: 'success', newData }, 
+      { 
+        status: 'success',
+        command: commandData.command,
+        tanaman: commandData.tanaman,
+        usia: commandData.usia
+      }, 
       { status: 201 }
     );
+    
   } catch (error) {
     return NextResponse.json(
       { message: "Gagal menyimpan data", error: String(error) }, 
