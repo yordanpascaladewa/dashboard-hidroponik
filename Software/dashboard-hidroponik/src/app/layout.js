@@ -1,13 +1,16 @@
-import React from 'react';
-import Sidebar from '../Sidebar';
+import './globals.css';
 
-export default function MainLayout({ children }) {
+export const metadata = {
+  title: 'AeroGrow Pro',
+  description: 'Sistem Hidroponik Universal V5',
+};
+
+export default function RootLayout({ children }) {
   return (
-    <div className="flex bg-[#121315] min-h-screen text-white font-sans">
-      <Sidebar />
-      <div className="flex-1 ml-[280px] overflow-y-auto h-screen">
+    <html lang="id">
+      <body className="bg-[#121315] text-white antialiased">
         {children}
-      </div>
-    </div>
+      </body>
+    </html>
   );
 }
