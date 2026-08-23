@@ -15,8 +15,6 @@ export default function Sidebar() {
 
   return (
     <aside className="w-[280px] h-screen bg-[#121315] border-r border-white/5 flex flex-col">
-      
-      {/* Header Logo - Ukuran Sprout digedein jadi 32 */}
       <div className="h-[90px] flex items-center px-8 shrink-0">
         <div className="flex items-center gap-2.5">
           <Sprout size={32} className="text-[#10B981]" />
@@ -24,7 +22,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation Menu - Padding disesuaikan biar lebih proporsional */}
       <nav className="flex-1 px-5 py-6 flex flex-col gap-3 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = pathname === item.path;
@@ -43,11 +40,10 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Logout Button */}
       <div className="p-8 border-t border-white/5 shrink-0">
         <button 
           onClick={() => router.push('/login')}
-          className="flex items-center gap-4 text-slate-400 hover:text-red-500 hover:bg-white/5 p-4 rounded-xl transition-all w-full"
+          className="flex items-center gap-4 text-slate-400 hover:text-red-500 hover:bg-white/5 p-4 rounded-xl transition-all w-full cursor-pointer"
         >
           <LogOut size={22} />
           <span className="font-bold text-[13px] tracking-widest uppercase">Keluar Sesi</span>

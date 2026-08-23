@@ -9,20 +9,20 @@ export default function MainLayout({ children }) {
   return (
     <div className="flex bg-[#121315] h-screen text-white font-sans overflow-hidden">
       
-      {/* KOTAK SIDEBAR */}
+      {/* SIDEBAR KIRI */}
       <div className={`transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${isSidebarOpen ? 'w-[280px]' : 'w-0'}`}>
         <Sidebar />
       </div>
       
-      {/* SISI KANAN */}
-      <div className="flex-1 flex flex-col h-screen min-w-0">
+      {/* KONTEN UTAMA SISI KANAN */}
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
         
-        {/* TOPBAR / NAVBAR ATAS (INI YANG ILANG TADI WKWK) */}
-        <header className="h-[90px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-[#121315]">
+        {/* TOPBAR / NAVBAR ATAS (DIJAMIN MUNCUL DI ATAS) */}
+        <header className="h-[90px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-[#121315] z-20">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400"
+              className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400 cursor-pointer"
             >
               <Menu size={24} />
             </button>
@@ -40,15 +40,15 @@ export default function MainLayout({ children }) {
               <Bell size={22} />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-[#121315]"></span>
             </button>
-            <div className="w-[1px] h-6 bg-white/10 mx-2"></div> {/* Pembatas vertikal */}
+            <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
             <button className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors bg-[#1f2021] border border-white/10 text-slate-200">
               <User size={20} />
             </button>
           </div>
         </header>
 
-        {/* AREA KONTEN UTAMA */}
-        <div className="flex-1 overflow-y-auto">
+        {/* AREA HALAMAN YANG BISA DI-SCROLL */}
+        <div className="flex-1 overflow-y-auto bg-[#121315]">
           {children}
         </div>
 

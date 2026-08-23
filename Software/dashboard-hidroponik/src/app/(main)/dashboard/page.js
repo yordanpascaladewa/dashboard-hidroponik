@@ -31,7 +31,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <main className="p-8 md:p-10 w-full flex flex-col gap-8">
+    <main className="p-8 md:p-10 w-full flex flex-col gap-8 pb-12">
       <div className="flex justify-between items-end mb-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">System Overview</h1>
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         {/* GRAFIK */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
           <h2 className="text-lg font-bold mb-8">Tren Kualitas Air (Real-Time)</h2>
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
@@ -109,7 +109,6 @@ function MetricCard({ label, value, unit, icon, color }) {
     <div className="bg-[#1f2021] rounded-2xl p-6 border border-white/5 shadow-lg flex flex-col gap-4 hover:border-white/10 transition-colors">
       <div className="flex justify-between items-start">
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
-        {/* Ikon sekarang dibungkus background transparan biar keliatan mewah */}
         <div className="p-2.5 rounded-xl bg-white/5" style={{ color: color }}>
           {icon}
         </div>
