@@ -86,7 +86,7 @@ export default function LoginPage() {
           </div>
 
           {/* ========================================== */}
-          {/* TECH STACK BADGES (CENTER BAWAH)             */}
+          {/* TECH STACK BADGES (DIUPDATE SESUAI PROJECT)  */}
           {/* ========================================== */}
           <div className="mt-20 md:mt-24 flex flex-wrap justify-center items-center gap-3 w-full">
             
@@ -102,22 +102,28 @@ export default function LoginPage() {
               <span className="text-[13px] font-semibold text-gray-800">React</span>
             </div>
             
-            {/* TypeScript */}
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" className="w-5 h-5 rounded-[4px]" />
-              <span className="text-[13px] font-semibold text-gray-800">TypeScript</span>
-            </div>
-            
             {/* Tailwind CSS */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
               <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
             </div>
             
-            {/* PostgreSQL */}
+            {/* MongoDB Atlas */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" className="w-5 h-5" />
-              <span className="text-[13px] font-semibold text-gray-800">PostgreSQL</span>
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
+              <span className="text-[13px] font-semibold text-gray-800">MongoDB</span>
+            </div>
+
+            {/* ESP32 (Hardware) */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <Cpu size={18} className="text-gray-800" />
+              <span className="text-[13px] font-semibold text-gray-800">ESP32</span>
+            </div>
+
+            {/* C++ (Firmware Language) */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
+              <span className="text-[13px] font-semibold text-gray-800">C++</span>
             </div>
             
           </div>
