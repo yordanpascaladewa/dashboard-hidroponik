@@ -5,8 +5,6 @@ export default function MainLayout({ children }) {
   return (
     <div className="flex bg-[#121315] min-h-screen text-white font-sans">
       <Sidebar />
-      
-      {/* Konten Utama (Dashboard, Analytics, dll) akan dirender di sini */}
       <div className="flex-1 ml-[280px] overflow-y-auto h-screen">
         {children}
       </div>
