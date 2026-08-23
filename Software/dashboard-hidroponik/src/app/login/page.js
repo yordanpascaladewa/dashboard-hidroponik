@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { X, Sprout, LogIn, Cpu } from 'lucide-react';
+import { X, Sprout, LogIn, Cpu, AlertCircle } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 
@@ -11,11 +11,27 @@ const montserrat = Montserrat({
 
 export default function LoginPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    router.push('/dashboard');
+    
+    // Cek jika field kosong
+    if (!username.trim() || !password.trim()) {
+      setErrorMessage('Username dan Password wajib diisi!');
+      return;
+    }
+
+    // Validasi akun (Lu bisa ubah teks 'admin' & 'aerogrow2026' sesuka lu)
+    if (username === 'admin' && password === 'aerogrow2026') {
+      setErrorMessage('');
+      router.push('/dashboard');
+    } else {
+      setErrorMessage('Username atau Password salah!');
+    }
   };
 
   return (
@@ -45,7 +61,7 @@ export default function LoginPage() {
           <div className="max-w-4xl mx-auto flex flex-col items-center mt-12">
             
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1f2021] border border-white/10 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-8 shadow-lg">
-              Tugas Akhir Teknik Elektro Universitas Diponegoro
+              Tugas Akhir Teknik Elektro UNDIP
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
@@ -75,7 +91,6 @@ export default function LoginPage() {
       {!isLoginOpen && (
         <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-3 px-6 pb-12 mt-auto">
           
-          {/* Next.js */}
           <div className="flex items-center gap-2.5 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
               <svg viewBox="0 0 180 180" className="w-full h-full" fill="black">
@@ -85,37 +100,31 @@ export default function LoginPage() {
             <span className="text-[13px] font-bold text-slate-200">Next.js</span>
           </div>
           
-          {/* React */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">React</span>
           </div>
           
-          {/* Tailwind CSS */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">Tailwind CSS</span>
           </div>
           
-          {/* MongoDB */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">MongoDB</span>
           </div>
 
-          {/* JavaScript (Ditambahkan) */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">JavaScript</span>
           </div>
 
-          {/* ESP32 */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <Cpu size={18} className="text-slate-200" />
             <span className="text-[13px] font-bold text-slate-200">ESP32</span>
           </div>
 
-          {/* C++ */}
           <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">C++</span>
@@ -134,7 +143,7 @@ export default function LoginPage() {
             {/* Tombol Close */}
             <div className="absolute top-6 right-6">
               <button 
-                onClick={() => setIsLoginOpen(false)}
+                onClick={() => { setIsLoginOpen(false); setErrorMessage(''); }}
                 className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-slate-400 hover:text-white"
               >
                 <X size={20} />
@@ -142,23 +151,32 @@ export default function LoginPage() {
             </div>
             
             {/* Logo Sprout */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-6">
               <Sprout size={42} className="text-[#10B981]" />
             </div>
 
             <div className="w-full mx-auto flex flex-col pb-2">
-              <h1 className="text-[28px] font-bold text-white mb-8 tracking-tight text-center">
+              <h1 className="text-[28px] font-bold text-white mb-6 tracking-tight text-center">
                 Sign in to AeroGrow
               </h1>
               
-              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-5">
+              {/* KOTAK NOTIFIKASI ERROR CUSTOM */}
+              {errorMessage && (
+                <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-xs font-semibold animate-in fade-in duration-300">
+                  <AlertCircle size={18} className="shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
                 <div>
                   <input 
                     type="text" 
                     id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     placeholder="Username" 
                     className="w-full bg-[#121315] border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
-                    required
                   />
                 </div>
                 
@@ -166,15 +184,16 @@ export default function LoginPage() {
                   <input 
                     type="password" 
                     id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password" 
                     className="w-full bg-[#121315] border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
-                    required
                   />
                 </div>
                 
                 <button 
                   type="submit"
-                  className="w-full bg-[#10B981] text-[#0d0e0f] py-4 mt-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
+                  className="w-full bg-[#10B981] text-[#0d0e0f] py-4 mt-2 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
                 >
                   Log in
                 </button>
