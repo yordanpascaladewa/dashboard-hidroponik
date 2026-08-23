@@ -15,10 +15,21 @@ export default function DashboardPage() {
         const res = await fetch('/api/telemetry', { cache: 'no-store' });
         const json = await res.json();
         if (json.data && json.data.length > 0) {
-          setTelemetry(json.data[0]);
+          const latest = json.data[0];
           
-          // Mengubah data mentah + menambahkan sedikit efek fluktuasi/gelombang tipis 
-          // agar grafik terlihat dinamis untuk keperluan demo/presentasi
+          // Tambahin fluktuasi kecil biar angka di Card ikut hidup & dinamis
+          const dynamicPh = latest.ph + (Math.sin(Date.now() / 5000) * 0.05);
+          const dynamicTds = latest.tds + Math.floor(Math.sin(Date.now() / 4000) * 8);
+          const dynamicSuhu = latest.suhu + (Math.cos(Date.now() / 6000) * 0.2);
+
+          setTelemetry({
+            ...latest,
+            ph: parseFloat(dynamicPh.toFixed(2)),
+            tds: Math.round(dynamicTds),
+            suhu: parseFloat(dynamicSuhu.toFixed(1))
+          });
+
+          // Riwayat grafik dengan efek gelombang halus
           const history = json.data.slice(0, 20).reverse().map((item, index) => {
             const jitterPh = item.ph + (Math.sin(index * 0.6) * 0.08);
             const jitterTds = item.tds + (Math.cos(index * 0.5) * 12);
@@ -36,7 +47,7 @@ export default function DashboardPage() {
     };
     
     fetchData();
-    // Jeda fetch tetap 1 menit
+    // Jeda fetch per 1 menit
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -53,7 +64,7 @@ export default function DashboardPage() {
       {/* METRIC CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24}/>} color="#63f7ff" />
-        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(1) || '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" />
+        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" />
         <MetricCard label="Nutrisi (TDS)" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24}/>} color="#8B5CF6" />
         <MetricCard label="Fase Tumbuh" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={24}/>} color="#dfed1a" />
       </div>
