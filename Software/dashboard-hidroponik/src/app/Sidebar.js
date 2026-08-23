@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, BarChart3, Cpu, LogOut, Sprout } from 'lucide-react';
 
-export default function Sidebar() {
+// Tangkap prop isOpen dari layout tadi
+export default function Sidebar({ isOpen }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -14,7 +15,9 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-[280px] h-screen bg-[#121315] border-r border-white/5 flex flex-col fixed left-0 top-0">
+    // Tambahin class translate-x buat efek nge-slide ke kiri pas ditutup
+    <aside className={`w-[280px] h-screen bg-[#121315] border-r border-white/5 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      
       {/* Header Logo */}
       <div className="h-[100px] flex items-center px-8">
         <div className="flex items-center gap-2">
