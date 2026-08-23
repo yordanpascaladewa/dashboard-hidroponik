@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Thermometer, Droplets, FlaskConical, Calendar, Activity, Zap, BatteryCharging } from 'lucide-react';
+// Sprout udah ditambahin di sini!
+import { Thermometer, Droplets, FlaskConical, Calendar, Activity, Zap, BatteryCharging, Sprout } from 'lucide-react';
 
 export default function DashboardPage() {
   const [telemetry, setTelemetry] = useState({
