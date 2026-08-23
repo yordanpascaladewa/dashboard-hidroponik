@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, Sprout, LogIn, Cpu } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
+import { useRouter } from 'next/navigation'; // <-- Import router untuk navigasi pindah halaman
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -10,6 +11,17 @@ const montserrat = Montserrat({
 
 export default function LoginPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const router = useRouter(); // <-- Inisialisasi router
+
+  // Fungsi untuk menangani saat tombol 'Log in' di pop-up dipencet
+  const handleLoginSubmit = (e) => {
+    e.preventDefault(); // Mencegah halaman ke-refresh
+    
+    // (Opsional: Nanti lu bisa tambahin logika ngecek password di sini)
+    
+    // Langsung pindah ke halaman dashboard
+    router.push('/dashboard');
+  };
 
   return (
     <div 
@@ -21,93 +33,89 @@ export default function LoginPage() {
       <div className={`absolute inset-0 transition-all duration-500 ${isLoginOpen ? 'bg-black/70 backdrop-blur-sm' : 'bg-black/60'}`}></div>
 
       {/* ========================================== */}
-      {/* 1. HEADER (LOGO & TOMBOL LOGIN ICON)         */}
+      {/* 1. HEADER (LOGO DI TENGAH ATAS)              */}
       {/* ========================================== */}
-      <header className="relative z-10 flex justify-between items-center w-full px-6 md:px-16 py-6">
+      {/* Menggunakan absolute agar tidak menggeser titik tengah dari konten utama */}
+      <header className="absolute top-0 w-full flex justify-center items-center py-8 z-20">
         <div className="flex items-center gap-2">
-          <Sprout size={28} className="text-[#10B981]" />
-          <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
+          <Sprout size={32} className="text-[#10B981]" />
+          <span className="text-2xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
-        
-        {!isLoginOpen && (
-          <button 
-            onClick={() => setIsLoginOpen(true)}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2.5 rounded-full font-semibold transition-all backdrop-blur-md"
-          >
-            <LogIn size={18} />
-            <span>Login Sistem</span>
-          </button>
-        )}
       </header>
 
       {/* ========================================== */}
       {/* 2. LANDING PAGE CONTENT (TENTANG SISTEM)     */}
       {/* ========================================== */}
       {!isLoginOpen && (
-        <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center animate-in fade-in zoom-in duration-700 pb-12">
-          <div className="max-w-4xl mx-auto flex flex-col items-center mt-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-[#10B981] text-sm font-semibold tracking-widest uppercase mb-6 backdrop-blur-md">
+        <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center animate-in fade-in zoom-in duration-700">
+          
+          <div className="max-w-4xl mx-auto flex flex-col items-center">
+            
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 border border-white/20 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-6 backdrop-blur-md">
               Tugas Akhir Teknik Elektro UNDIP
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
-              Sistem Hidroponik<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
+              Sistem Hidroponik <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12 font-light">
-             
+            <p className="text-base md:text-lg text-gray-300 max-w-2xl leading-relaxed mb-10 font-light">
+              Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
             </p>
             
-            {/* Tombol masuk sekarang langsung di bawah deskripsi */}
             <button 
               onClick={() => setIsLoginOpen(true)}
-              className="bg-[#10B981] hover:bg-[#059669] text-black font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+              className="bg-[#10B981] hover:bg-[#059669] text-black font-bold py-3.5 px-8 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
             >
               <LogIn size={20} /> Masuk ke Dashboard
             </button>
-          </div>
-
-          {/* ========================================== */}
-          {/* TECH STACK BADGES (CENTER BAWAH)             */}
-          {/* ========================================== */}
-          <div className="mt-20 md:mt-24 flex flex-wrap justify-center items-center gap-3 w-full">
-            
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <svg viewBox="0 0 256 256" className="w-5 h-5" fill="black"><circle cx="128" cy="128" r="128"/><path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/></svg>
-              <span className="text-[13px] font-semibold text-gray-800">Next.js</span>
-            </div>
-            
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
-              <span className="text-[13px] font-semibold text-gray-800">React</span>
-            </div>
-            
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
-              <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
-            </div>
-            
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
-              <span className="text-[13px] font-semibold text-gray-800">MongoDB</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <Cpu size={18} className="text-gray-800" />
-              <span className="text-[13px] font-semibold text-gray-800">ESP32</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
-              <span className="text-[13px] font-semibold text-gray-800">C++</span>
-            </div>
             
           </div>
+
         </main>
       )}
 
       {/* ========================================== */}
-      {/* 3. MODAL POP-UP LOGIN                        */}
+      {/* 3. TECH STACK BADGES (CENTER BAWAH)          */}
+      {/* ========================================== */}
+      {!isLoginOpen && (
+        <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-3 px-6 pb-10 animate-in fade-in duration-700">
+          
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <svg viewBox="0 0 256 256" className="w-5 h-5" fill="black"><circle cx="128" cy="128" r="128"/><path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/></svg>
+            <span className="text-[13px] font-semibold text-gray-800">Next.js</span>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
+            <span className="text-[13px] font-semibold text-gray-800">React</span>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
+            <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
+            <span className="text-[13px] font-semibold text-gray-800">MongoDB</span>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <Cpu size={18} className="text-gray-800" />
+            <span className="text-[13px] font-semibold text-gray-800">ESP32</span>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
+            <span className="text-[13px] font-semibold text-gray-800">C++</span>
+          </div>
+          
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* 4. MODAL POP-UP LOGIN                        */}
       {/* ========================================== */}
       {isLoginOpen && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
@@ -133,7 +141,8 @@ export default function LoginPage() {
                 Sign in to AeroGrow
               </h1>
               
-              <form className="flex flex-col gap-5">
+              {/* Tambahkan onSubmit memanggil handleLoginSubmit */}
+              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-5">
                 <div>
                   <input 
                     type="text" 
