@@ -1,30 +1,37 @@
 'use client';
 import React, { useState } from 'react';
 import { X, Sprout, LogIn, Cpu, Globe, Server } from 'lucide-react';
+// 1. Import font Montserrat dari Google Fonts bawaan Next.js
+import { Montserrat } from 'next/font/google';
+
+// 2. Inisialisasi font dengan berbagai ketebalan
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+});
 
 export default function LoginPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
+    // 3. Tambahkan montserrat.className ke div paling luar biar semua elemen pakai font ini
     <div 
-      className="min-h-screen relative bg-cover bg-center overflow-hidden"
+      className={`min-h-screen relative bg-cover bg-center overflow-hidden ${montserrat.className}`}
       // TODO: Ganti URL di bawah dengan path foto background alat hidroponik lu
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1558449028-b53a39d100fc?q=80&w=2000&auto=format&fit=crop')" }}
     >
-      {/* Dark Overlay untuk meredupkan foto background */}
+      {/* Dark Overlay */}
       <div className={`absolute inset-0 transition-all duration-500 ${isLoginOpen ? 'bg-black/70 backdrop-blur-sm' : 'bg-black/60'}`}></div>
 
       {/* ========================================== */}
       {/* 1. HEADER (LOGO & TOMBOL LOGIN ICON)         */}
       {/* ========================================== */}
-      {/* Perubahan: max-w-7xl dihapus, diganti w-full dan padding px-6 md:px-16 */}
       <header className="relative z-10 flex justify-between items-center w-full px-6 md:px-16 py-6">
         <div className="flex items-center gap-2">
           <Sprout size={28} className="text-[#10B981]" />
           <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
         
-        {/* Icon Login di Kanan Atas */}
         {!isLoginOpen && (
           <button 
             onClick={() => setIsLoginOpen(true)}
@@ -47,10 +54,10 @@ export default function LoginPage() {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
-              Sistem Hidroponik<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
+              Universal Hydroponic <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">System V5</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12 font-light">
               Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
             </p>
 
@@ -59,17 +66,17 @@ export default function LoginPage() {
               <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
                 <Cpu size={32} className="text-[#10B981] mb-4" />
                 <h3 className="text-white font-bold mb-2">ESP32 Dual-Core</h3>
-                <p className="text-sm text-gray-400">Multitasking stabil dengan FreeRTOS & filter ADC.</p>
+                <p className="text-sm text-gray-400 font-medium">Multitasking stabil dengan FreeRTOS & filter ADC.</p>
               </div>
               <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
                 <Globe size={32} className="text-[#3b82f6] mb-4" />
                 <h3 className="text-white font-bold mb-2">Next.js Dashboard</h3>
-                <p className="text-sm text-gray-400">Antarmuka web interaktif tanpa full-page reload.</p>
+                <p className="text-sm text-gray-400 font-medium">Antarmuka web interaktif tanpa full-page reload.</p>
               </div>
               <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
                 <Server size={32} className="text-[#8b5cf6] mb-4" />
                 <h3 className="text-white font-bold mb-2">MongoDB Atlas</h3>
-                <p className="text-sm text-gray-400">Penyimpanan telemetri yang aman dan terstruktur.</p>
+                <p className="text-sm text-gray-400 font-medium">Penyimpanan telemetri yang aman dan terstruktur.</p>
               </div>
             </div>
             
@@ -117,7 +124,7 @@ export default function LoginPage() {
                     type="text" 
                     id="username"
                     placeholder="Username" 
-                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
+                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
                     required
                   />
                 </div>
@@ -127,7 +134,7 @@ export default function LoginPage() {
                     type="password" 
                     id="password"
                     placeholder="Password" 
-                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors"
+                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
                     required
                   />
                 </div>
