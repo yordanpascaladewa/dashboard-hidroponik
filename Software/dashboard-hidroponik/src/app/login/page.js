@@ -21,13 +21,13 @@ export default function LoginPage() {
   return (
     <div className={`min-h-screen relative overflow-x-hidden flex flex-col bg-[#121315] ${montserrat.className}`}>
       
-      {/* Overlay gelap cuma muncul pas modal pop-up kebuka */}
+      {/* Overlay gelap pas modal pop-up kebuka */}
       {isLoginOpen && (
         <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
       )}
 
       {/* ========================================== */}
-      {/* 1. HEADER (LOGO DI TENGAH ATAS)              */}
+      {/* 1. HEADER (LOGO DI TENGAH ATAS)            */}
       {/* ========================================== */}
       <header className="absolute top-0 w-full flex justify-center items-center py-8 z-20">
         <div className="flex items-center gap-3">
@@ -37,19 +37,20 @@ export default function LoginPage() {
       </header>
 
       {/* ========================================== */}
-      {/* 2. LANDING PAGE CONTENT                      */}
+      {/* 2. LANDING PAGE CONTENT                    */}
       {/* ========================================== */}
       {!isLoginOpen && (
-        <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center animate-in fade-in zoom-in duration-700">
+        <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center">
           
-          <div className="max-w-4xl mx-auto flex flex-col items-center mt-24">
+          <div className="max-w-4xl mx-auto flex flex-col items-center mt-12">
             
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1f2021] border border-white/10 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-8 shadow-lg">
               Tugas Akhir Teknik Elektro UNDIP
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
-              Sistem Hidroponik <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
+              Sistem Hidroponik <br/> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
             </h1>
             
             <p className="text-base md:text-lg text-slate-400 max-w-2xl leading-relaxed mb-10 font-light">
@@ -58,7 +59,7 @@ export default function LoginPage() {
             
             <button 
               onClick={() => setIsLoginOpen(true)}
-              className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+              className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer"
             >
               <LogIn size={20} /> Login
             </button>
@@ -69,41 +70,53 @@ export default function LoginPage() {
       )}
 
       {/* ========================================== */}
-      {/* 3. TECH STACK BADGES (THEMA DARK)            */}
+      {/* 3. TECH STACK BADGES                       */}
       {/* ========================================== */}
       {!isLoginOpen && (
-        <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-4 px-6 pb-12 animate-in fade-in duration-700 mt-auto">
+        <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-3 px-6 pb-12 mt-auto">
           
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
-            {/* Logo Next.js diubah fill-nya jadi putih biar keliatan di background gelap */}
-            <svg viewBox="0 0 256 256" className="w-5 h-5" fill="white">
-              <circle cx="128" cy="128" r="128" fill="transparent" stroke="white" strokeWidth="10"/>
-              <path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/>
-            </svg>
+          {/* Next.js */}
+          <div className="flex items-center gap-2.5 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
+              <svg viewBox="0 0 180 180" className="w-full h-full" fill="black">
+                <path d="M149.316 157.19L84.82 72.8H70.1V126.9H81.3V86.7L142.1 165.7C144.5 163.2 147 160.3 149.316 157.19ZM110 72.8H121.5V126.9H110V72.8Z"/>
+              </svg>
+            </div>
             <span className="text-[13px] font-bold text-slate-200">Next.js</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+          {/* React */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">React</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+          {/* Tailwind CSS */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">Tailwind CSS</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+          {/* MongoDB */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">MongoDB</span>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+          {/* JavaScript (Ditambahkan) */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript" className="w-5 h-5" />
+            <span className="text-[13px] font-bold text-slate-200">JavaScript</span>
+          </div>
+
+          {/* ESP32 */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <Cpu size={18} className="text-slate-200" />
             <span className="text-[13px] font-bold text-slate-200">ESP32</span>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+          {/* C++ */}
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
             <span className="text-[13px] font-bold text-slate-200">C++</span>
           </div>
@@ -161,7 +174,7 @@ export default function LoginPage() {
                 
                 <button 
                   type="submit"
-                  className="w-full bg-[#10B981] text-[#0d0e0f] py-4 mt-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                  className="w-full bg-[#10B981] text-[#0d0e0f] py-4 mt-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
                 >
                   Log in
                 </button>
