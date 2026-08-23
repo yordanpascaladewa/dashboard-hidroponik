@@ -1,10 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import { X, Sprout, LogIn, Cpu, Globe, Server } from 'lucide-react';
-// 1. Import font Montserrat dari Google Fonts bawaan Next.js
 import { Montserrat } from 'next/font/google';
 
-// 2. Inisialisasi font dengan berbagai ketebalan
 const montserrat = Montserrat({ 
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -14,9 +12,8 @@ export default function LoginPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    // 3. Tambahkan montserrat.className ke div paling luar biar semua elemen pakai font ini
     <div 
-      className={`min-h-screen relative bg-cover bg-center overflow-hidden ${montserrat.className}`}
+      className={`min-h-screen relative bg-cover bg-center overflow-x-hidden flex flex-col ${montserrat.className}`}
       // TODO: Ganti URL di bawah dengan path foto background alat hidroponik lu
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1558449028-b53a39d100fc?q=80&w=2000&auto=format&fit=crop')" }}
     >
@@ -47,8 +44,8 @@ export default function LoginPage() {
       {/* 2. LANDING PAGE CONTENT (TENTANG SISTEM)     */}
       {/* ========================================== */}
       {!isLoginOpen && (
-        <main className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-6 text-center animate-in fade-in zoom-in duration-700">
-          <div className="max-w-4xl mx-auto flex flex-col items-center">
+        <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center animate-in fade-in zoom-in duration-700 pb-12">
+          <div className="max-w-4xl mx-auto flex flex-col items-center mt-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-[#10B981] text-sm font-semibold tracking-widest uppercase mb-6 backdrop-blur-md">
               Tugas Akhir Teknik Elektro UNDIP
             </div>
@@ -87,6 +84,43 @@ export default function LoginPage() {
               <LogIn size={20} /> Masuk ke Dashboard
             </button>
           </div>
+
+          {/* ========================================== */}
+          {/* TECH STACK BADGES (CENTER BAWAH)             */}
+          {/* ========================================== */}
+          <div className="mt-20 md:mt-24 flex flex-wrap justify-center items-center gap-3 w-full">
+            
+            {/* Next.js */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <svg viewBox="0 0 256 256" className="w-5 h-5" fill="black"><circle cx="128" cy="128" r="128"/><path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/></svg>
+              <span className="text-[13px] font-semibold text-gray-800">Next.js</span>
+            </div>
+            
+            {/* React */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
+              <span className="text-[13px] font-semibold text-gray-800">React</span>
+            </div>
+            
+            {/* TypeScript */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TypeScript" className="w-5 h-5 rounded-[4px]" />
+              <span className="text-[13px] font-semibold text-gray-800">TypeScript</span>
+            </div>
+            
+            {/* Tailwind CSS */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
+              <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
+            </div>
+            
+            {/* PostgreSQL */}
+            <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" className="w-5 h-5" />
+              <span className="text-[13px] font-semibold text-gray-800">PostgreSQL</span>
+            </div>
+            
+          </div>
         </main>
       )}
 
@@ -97,7 +131,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
           <div className="w-full max-w-[480px] bg-black sm:rounded-[2rem] p-6 sm:p-10 flex flex-col shadow-2xl border border-white/10 relative">
             
-            {/* Tombol Close (Silang) */}
+            {/* Tombol Close */}
             <div className="flex items-center justify-between mb-10 w-full">
               <button 
                 onClick={() => setIsLoginOpen(false)}
@@ -113,11 +147,10 @@ export default function LoginPage() {
 
             {/* Form Content Wrapper */}
             <div className="w-full max-w-[320px] mx-auto flex flex-col pb-8">
-              <h1 className="text-[32px] font-bold text-white mb-8 tracking-tight">
+              <h1 className="text-[32px] font-bold text-white mb-8 tracking-tight text-center">
                 Sign in to AeroGrow
               </h1>
               
-              {/* Form Input */}
               <form className="flex flex-col gap-5">
                 <div>
                   <input 
@@ -146,7 +179,6 @@ export default function LoginPage() {
                   Log in
                 </button>
               </form>
-
             </div>
           </div>
         </div>
