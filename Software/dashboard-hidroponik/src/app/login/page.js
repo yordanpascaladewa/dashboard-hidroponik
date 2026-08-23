@@ -53,7 +53,7 @@ export default function LoginPage() {
             </h1>
             
             <p className="text-base md:text-lg text-slate-400 max-w-2xl leading-relaxed mb-10 font-light">
-              Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
+              Dikembangkan oleh mahasiswa Teknik Elektro Universitas Diponegoro
             </p>
             
             <button 
