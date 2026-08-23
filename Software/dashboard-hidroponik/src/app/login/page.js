@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { X, Sprout, LogIn, Cpu, Globe, Server } from 'lucide-react';
+import { X, Sprout, LogIn, Cpu } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 
 const montserrat = Montserrat({ 
@@ -57,26 +57,8 @@ export default function LoginPage() {
             <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-12 font-light">
               Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
             </p>
-
-            {/* Fitur Highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-12">
-              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
-                <Cpu size={32} className="text-[#10B981] mb-4" />
-                <h3 className="text-white font-bold mb-2">ESP32 Dual-Core</h3>
-                <p className="text-sm text-gray-400 font-medium">Multitasking stabil dengan FreeRTOS & filter ADC.</p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
-                <Globe size={32} className="text-[#3b82f6] mb-4" />
-                <h3 className="text-white font-bold mb-2">Next.js Dashboard</h3>
-                <p className="text-sm text-gray-400 font-medium">Antarmuka web interaktif tanpa full-page reload.</p>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-sm">
-                <Server size={32} className="text-[#8b5cf6] mb-4" />
-                <h3 className="text-white font-bold mb-2">MongoDB Atlas</h3>
-                <p className="text-sm text-gray-400 font-medium">Penyimpanan telemetri yang aman dan terstruktur.</p>
-              </div>
-            </div>
             
+            {/* Tombol masuk sekarang langsung di bawah deskripsi */}
             <button 
               onClick={() => setIsLoginOpen(true)}
               className="bg-[#10B981] hover:bg-[#059669] text-black font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
@@ -86,41 +68,35 @@ export default function LoginPage() {
           </div>
 
           {/* ========================================== */}
-          {/* TECH STACK BADGES (DIUPDATE SESUAI PROJECT)  */}
+          {/* TECH STACK BADGES (CENTER BAWAH)             */}
           {/* ========================================== */}
           <div className="mt-20 md:mt-24 flex flex-wrap justify-center items-center gap-3 w-full">
             
-            {/* Next.js */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <svg viewBox="0 0 256 256" className="w-5 h-5" fill="black"><circle cx="128" cy="128" r="128"/><path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/></svg>
               <span className="text-[13px] font-semibold text-gray-800">Next.js</span>
             </div>
             
-            {/* React */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
               <span className="text-[13px] font-semibold text-gray-800">React</span>
             </div>
             
-            {/* Tailwind CSS */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
               <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
             </div>
             
-            {/* MongoDB Atlas */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
               <span className="text-[13px] font-semibold text-gray-800">MongoDB</span>
             </div>
 
-            {/* ESP32 (Hardware) */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <Cpu size={18} className="text-gray-800" />
               <span className="text-[13px] font-semibold text-gray-800">ESP32</span>
             </div>
 
-            {/* C++ (Firmware Language) */}
             <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
               <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
               <span className="text-[13px] font-semibold text-gray-800">C++</span>
