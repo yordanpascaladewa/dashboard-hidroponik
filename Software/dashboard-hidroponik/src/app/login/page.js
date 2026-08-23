@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, Sprout, LogIn, Cpu } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
-import { useRouter } from 'next/navigation'; // <-- Import router untuk navigasi pindah halaman
+import { useRouter } from 'next/navigation';
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -11,47 +11,40 @@ const montserrat = Montserrat({
 
 export default function LoginPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const router = useRouter(); // <-- Inisialisasi router
+  const router = useRouter();
 
-  // Fungsi untuk menangani saat tombol 'Log in' di pop-up dipencet
   const handleLoginSubmit = (e) => {
-    e.preventDefault(); // Mencegah halaman ke-refresh
-    
-    // (Opsional: Nanti lu bisa tambahin logika ngecek password di sini)
-    
-    // Langsung pindah ke halaman dashboard
+    e.preventDefault();
     router.push('/dashboard');
   };
 
   return (
-    <div 
-      className={`min-h-screen relative bg-cover bg-center overflow-x-hidden flex flex-col ${montserrat.className}`}
-      // TODO: Ganti URL di bawah dengan path foto background alat hidroponik lu
-      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1558449028-b53a39d100fc?q=80&w=2000&auto=format&fit=crop')" }}
-    >
-      {/* Dark Overlay */}
-      <div className={`absolute inset-0 transition-all duration-500 ${isLoginOpen ? 'bg-black/70 backdrop-blur-sm' : 'bg-black/60'}`}></div>
+    <div className={`min-h-screen relative overflow-x-hidden flex flex-col bg-[#121315] ${montserrat.className}`}>
+      
+      {/* Overlay gelap cuma muncul pas modal pop-up kebuka */}
+      {isLoginOpen && (
+        <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
+      )}
 
       {/* ========================================== */}
       {/* 1. HEADER (LOGO DI TENGAH ATAS)              */}
       {/* ========================================== */}
-      {/* Menggunakan absolute agar tidak menggeser titik tengah dari konten utama */}
       <header className="absolute top-0 w-full flex justify-center items-center py-8 z-20">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Sprout size={32} className="text-[#10B981]" />
           <span className="text-2xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
       </header>
 
       {/* ========================================== */}
-      {/* 2. LANDING PAGE CONTENT (TENTANG SISTEM)     */}
+      {/* 2. LANDING PAGE CONTENT                      */}
       {/* ========================================== */}
       {!isLoginOpen && (
         <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center animate-in fade-in zoom-in duration-700">
           
-          <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <div className="max-w-4xl mx-auto flex flex-col items-center mt-24">
             
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 border border-white/20 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-6 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1f2021] border border-white/10 text-[#10B981] text-xs font-bold tracking-widest uppercase mb-8 shadow-lg">
               Tugas Akhir Teknik Elektro UNDIP
             </div>
             
@@ -59,13 +52,13 @@ export default function LoginPage() {
               Sistem Hidroponik <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
             </h1>
             
-            <p className="text-base md:text-lg text-gray-300 max-w-2xl leading-relaxed mb-10 font-light">
+            <p className="text-base md:text-lg text-slate-400 max-w-2xl leading-relaxed mb-10 font-light">
               Dikembangkan oleh Raditya Jordy Anargya R. Sistem ini memadukan perangkat keras IoT cerdas dengan pemrosesan sinyal tingkat lanjut untuk mengotomatisasi nutrisi dan pemantauan tanaman hidroponik secara *real-time*.
             </p>
             
             <button 
               onClick={() => setIsLoginOpen(true)}
-              className="bg-[#10B981] hover:bg-[#059669] text-black font-bold py-3.5 px-8 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+              className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-4 px-10 rounded-full flex items-center gap-2 hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
             >
               <LogIn size={20} /> Masuk ke Dashboard
             </button>
@@ -76,39 +69,43 @@ export default function LoginPage() {
       )}
 
       {/* ========================================== */}
-      {/* 3. TECH STACK BADGES (CENTER BAWAH)          */}
+      {/* 3. TECH STACK BADGES (THEMA DARK)            */}
       {/* ========================================== */}
       {!isLoginOpen && (
-        <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-3 px-6 pb-10 animate-in fade-in duration-700">
+        <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-4 px-6 pb-12 animate-in fade-in duration-700 mt-auto">
           
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-            <svg viewBox="0 0 256 256" className="w-5 h-5" fill="black"><circle cx="128" cy="128" r="128"/><path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/></svg>
-            <span className="text-[13px] font-semibold text-gray-800">Next.js</span>
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+            {/* Logo Next.js diubah fill-nya jadi putih biar keliatan di background gelap */}
+            <svg viewBox="0 0 256 256" className="w-5 h-5" fill="white">
+              <circle cx="128" cy="128" r="128" fill="transparent" stroke="white" strokeWidth="10"/>
+              <path d="M168 180l-60-80v80H90V76h20l60 80V76h18v104z" fill="white"/>
+            </svg>
+            <span className="text-[13px] font-bold text-slate-200">Next.js</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React" className="w-5 h-5" />
-            <span className="text-[13px] font-semibold text-gray-800">React</span>
+            <span className="text-[13px] font-bold text-slate-200">React</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" className="w-5 h-5" />
-            <span className="text-[13px] font-semibold text-gray-800">Tailwind CSS</span>
+            <span className="text-[13px] font-bold text-slate-200">Tailwind CSS</span>
           </div>
           
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="MongoDB" className="w-5 h-5" />
-            <span className="text-[13px] font-semibold text-gray-800">MongoDB</span>
+            <span className="text-[13px] font-bold text-slate-200">MongoDB</span>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
-            <Cpu size={18} className="text-gray-800" />
-            <span className="text-[13px] font-semibold text-gray-800">ESP32</span>
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
+            <Cpu size={18} className="text-slate-200" />
+            <span className="text-[13px] font-bold text-slate-200">ESP32</span>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#f4f4f5] px-4 py-2 rounded-full shadow-md hover:scale-105 transition-transform cursor-default">
+          <div className="flex items-center gap-2 bg-[#1f2021] border border-white/10 px-5 py-2.5 rounded-full shadow-lg hover:border-white/20 transition-colors cursor-default">
             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" className="w-5 h-5" />
-            <span className="text-[13px] font-semibold text-gray-800">C++</span>
+            <span className="text-[13px] font-bold text-slate-200">C++</span>
           </div>
           
         </div>
@@ -119,36 +116,35 @@ export default function LoginPage() {
       {/* ========================================== */}
       {isLoginOpen && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-          <div className="w-full max-w-[480px] bg-black sm:rounded-[2rem] p-6 sm:p-10 flex flex-col shadow-2xl border border-white/10 relative">
+          <div className="w-full max-w-[420px] bg-[#1f2021] sm:rounded-[2rem] p-8 sm:p-10 flex flex-col shadow-2xl border border-white/10 relative">
             
             {/* Tombol Close */}
-            <div className="flex items-center justify-between mb-10 w-full">
+            <div className="absolute top-6 right-6">
               <button 
                 onClick={() => setIsLoginOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white"
+                className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-slate-400 hover:text-white"
               >
                 <X size={20} />
               </button>
-              
-              <div className="flex-1 flex justify-center mr-8">
-                <Sprout size={36} className="text-[#10B981]" />
-              </div>
+            </div>
+            
+            {/* Logo Sprout */}
+            <div className="flex justify-center mb-8">
+              <Sprout size={42} className="text-[#10B981]" />
             </div>
 
-            {/* Form Content Wrapper */}
-            <div className="w-full max-w-[320px] mx-auto flex flex-col pb-8">
-              <h1 className="text-[32px] font-bold text-white mb-8 tracking-tight text-center">
+            <div className="w-full mx-auto flex flex-col pb-2">
+              <h1 className="text-[28px] font-bold text-white mb-8 tracking-tight text-center">
                 Sign in to AeroGrow
               </h1>
               
-              {/* Tambahkan onSubmit memanggil handleLoginSubmit */}
               <form onSubmit={handleLoginSubmit} className="flex flex-col gap-5">
                 <div>
                   <input 
                     type="text" 
                     id="username"
                     placeholder="Username" 
-                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
+                    className="w-full bg-[#121315] border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
                     required
                   />
                 </div>
@@ -158,14 +154,14 @@ export default function LoginPage() {
                     type="password" 
                     id="password"
                     placeholder="Password" 
-                    className="w-full bg-transparent border border-gray-600 rounded p-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
+                    className="w-full bg-[#121315] border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] transition-colors font-medium"
                     required
                   />
                 </div>
                 
                 <button 
                   type="submit"
-                  className="w-full bg-white text-black py-3.5 mt-4 rounded-full font-bold hover:bg-gray-200 transition-colors text-[15px]"
+                  className="w-full bg-[#10B981] text-[#0d0e0f] py-4 mt-4 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                 >
                   Log in
                 </button>
