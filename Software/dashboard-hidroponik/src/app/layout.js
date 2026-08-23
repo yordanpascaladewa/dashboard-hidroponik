@@ -1,16 +1,15 @@
-import './globals.css';
+import React from 'react';
+import Sidebar from '../Sidebar';
 
-export const metadata = {
-  title: 'AeroGrow Pro',
-  description: 'Sistem Hidroponik Universal V5',
-};
-
-export default function RootLayout({ children }) {
+export default function MainLayout({ children }) {
   return (
-    <html lang="id">
-      <body className="bg-[#121315] text-white antialiased">
+    <div className="flex bg-[#121315] min-h-screen text-white font-sans">
+      <Sidebar />
+      
+      {/* Konten Utama (Dashboard, Analytics, dll) akan dirender di sini */}
+      <div className="flex-1 ml-[280px] overflow-y-auto h-screen">
         {children}
-      </body>
-    </html>
+      </div>
+    </div>
   );
 }
