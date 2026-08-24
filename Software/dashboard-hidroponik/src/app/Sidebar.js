@@ -1,12 +1,11 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { LayoutGrid, BarChart2, Server, LogOut, Sprout } from 'lucide-react';
 
 export default function Sidebar({ onClose }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   // Daftar menu yang sesuai dengan UI web lu
   const menuItems = [
@@ -24,23 +23,32 @@ export default function Sidebar({ onClose }) {
     window.location.href = '/login';
   };
 
+  // FUNGSI NAVIGASI PINTAR (Hanya nutup sidebar di layar HP)
+  const handleLinkClick = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="w-full h-full bg-[#0d0e0f] border-r border-white/5 flex flex-col justify-between py-8">
-      <div>
+    <aside className="w-full h-full bg-[#0d0e0f] border-r border-white/5 flex flex-col py-6 md:py-8 overflow-y-auto">
+      
+      {/* AREA ATAS: flex-1 akan mendorong konten ini mengisi ruang kosong */}
+      <div className="flex-1 flex flex-col">
         {/* LOGO AREA */}
-        <div className="flex items-center gap-3 px-8 mb-12">
+        <div className="flex items-center gap-3 px-8 mb-10 md:mb-12 shrink-0">
           <Sprout size={28} className="text-[#10B981]" />
           <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
 
         {/* NAVIGATION ITEMS */}
-        <nav className="flex flex-col gap-2 px-4">
+        <nav className="flex flex-col gap-2 px-4 shrink-0">
           {menuItems.map((item) => {
             // Mengecek apakah halaman ini sedang aktif
             const isActive = pathname === item.path;
             
             return (
-              <Link href={item.path} key={item.path} onClick={onClose}>
+              <Link href={item.path} key={item.path} onClick={handleLinkClick}>
                 <div className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${
                   isActive 
                     ? 'bg-[#1f2021] text-[#10B981] shadow-lg border border-white/5' 
@@ -55,8 +63,8 @@ export default function Sidebar({ onClose }) {
         </nav>
       </div>
 
-      {/* TOMBOL LOGOUT AREA */}
-      <div className="px-4">
+      {/* AREA BAWAH: Tombol Logout (Aman dari potongan layar HP) */}
+      <div className="px-4 mt-8 pb-4 shrink-0">
         <button 
           onClick={handleLogout}
           className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest text-slate-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 cursor-pointer"
@@ -64,6 +72,7 @@ export default function Sidebar({ onClose }) {
           <LogOut size={20} /> KELUAR SESI
         </button>
       </div>
+
     </aside>
   );
 }
