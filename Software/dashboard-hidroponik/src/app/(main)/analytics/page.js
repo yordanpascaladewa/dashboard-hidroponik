@@ -43,11 +43,12 @@ export default function AnalyticsPage() {
             };
           });
 
-          // Set rata-rata
+          // Set rata-rata (Dengan pencegahan pembagian 0 jika database kosong)
+          const dataCount = historyData.length || 1;
           setAverages({
-            ph: sumPh / historyData.length,
-            tds: sumTds / historyData.length,
-            suhu: sumSuhu / historyData.length
+            ph: sumPh / dataCount,
+            tds: sumTds / dataCount,
+            suhu: sumSuhu / dataCount
           });
 
           setChartData(formattedData);
@@ -129,8 +130,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
         
-        {/* TINGGI GRAFIK: min 250px di HP, 400px di Desktop */}
-        <div className="w-full min-h-[250px] md:min-h-[400px]">
+        {/* FIX: TINGGI GRAFIK HARUS FIXED h-[300px] atau flex-1 AGAR RESPONSIVECONTAINER TIDAK MENGHILANG */}
+        <div className="flex-1 w-full h-[300px] md:h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
@@ -146,7 +147,6 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} dy={10} minTickGap={20} />
               
-              {/* PENYELESAIAN MASALAH ANGKA DESIMAL (TICKS BULAT) */}
               <YAxis yId="left" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} domain={[5, 9]} ticks={[5, 6, 7, 8, 9]} tickFormatter={(val) => val.toFixed(1)} />
               <YAxis yId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} domain={[800, 1600]} ticks={[800, 1000, 1200, 1400, 1600]} tickFormatter={(val) => Math.round(val)} />
               

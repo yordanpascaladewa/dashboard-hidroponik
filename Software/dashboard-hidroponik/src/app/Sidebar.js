@@ -48,7 +48,13 @@ export default function Sidebar({ onClose }) {
             const isActive = pathname === item.path;
             
             return (
-              <Link href={item.path} key={item.path} onClick={handleLinkClick}>
+              <Link 
+                href={item.path} 
+                key={item.path} 
+                onClick={handleLinkClick}
+                // ANTI FLASH PUTIH: Tambahkan outline-none dan focus:outline-none
+                className="outline-none focus:outline-none block" 
+              >
                 <div className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${
                   isActive 
                     ? 'bg-[#1f2021] text-[#10B981] shadow-lg border border-white/5' 
@@ -63,13 +69,14 @@ export default function Sidebar({ onClose }) {
         </nav>
       </div>
 
-      {/* AREA BAWAH: Tombol Logout (Aman dari potongan layar HP) */}
+      {/* AREA BAWAH: Tombol Logout */}
       <div className="px-4 mt-8 pb-4 shrink-0">
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest text-slate-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 cursor-pointer"
+          // ANTI FLASH PUTIH PADA TOMBOL
+          className="w-full outline-none focus:outline-none flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest text-slate-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 cursor-pointer"
         >
-          <LogOut size={20} /> KELUAR SESI
+          <LogOut size={20} /> KELUAR
         </button>
       </div>
 
