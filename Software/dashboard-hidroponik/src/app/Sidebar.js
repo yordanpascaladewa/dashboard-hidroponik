@@ -1,62 +1,67 @@
 'use client';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, BarChart3, Cpu, LogOut, Sprout } from 'lucide-react';
+import { LayoutGrid, BarChart2, Server, LogOut, Sprout } from 'lucide-react';
 
 export default function Sidebar({ onClose }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Daftar menu yang sesuai dengan UI web lu
   const menuItems = [
-    { name: 'BERANDA', icon: <LayoutDashboard size={22} />, path: '/dashboard' },
-    { name: 'ANALISIS DATA', icon: <BarChart3 size={22} />, path: '/analytics' },
-    { name: 'STATUS SISTEM', icon: <Cpu size={22} />, path: '/hardware-status' },
+    { path: '/dashboard', name: 'BERANDA', icon: <LayoutGrid size={20} /> },
+    { path: '/analytics', name: 'ANALISIS DATA', icon: <BarChart2 size={20} /> },
+    { path: '/hardware-status', name: 'STATUS SISTEM', icon: <Server size={20} /> },
   ];
 
-  const handleMenuClick = () => {
-    // Otomatis nutup sidebar kalau dibuka di layar HP (< 1024px)
-    if (window.innerWidth < 1024 && onClose) {
-      onClose();
-    }
+  // FUNGSI UNTUK LOGOUT / KELUAR SESI (Hapus Tiket)
+  const handleLogout = () => {
+    // Hapus cookie sesi login
+    document.cookie = "auth_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    
+    // Refresh dan kembalikan ke halaman login
+    window.location.href = '/login';
   };
 
   return (
-    <aside className="w-[280px] h-screen bg-[#121315] border-r border-white/5 flex flex-col">
-      <div className="h-[90px] flex items-center px-8 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Sprout size={32} className="text-[#10B981]" />
-          <span className="text-2xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
+    <aside className="w-full h-full bg-[#0d0e0f] border-r border-white/5 flex flex-col justify-between py-8">
+      <div>
+        {/* LOGO AREA */}
+        <div className="flex items-center gap-3 px-8 mb-12">
+          <Sprout size={28} className="text-[#10B981]" />
+          <span className="text-xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
+
+        {/* NAVIGATION ITEMS */}
+        <nav className="flex flex-col gap-2 px-4">
+          {menuItems.map((item) => {
+            // Mengecek apakah halaman ini sedang aktif
+            const isActive = pathname === item.path;
+            
+            return (
+              <Link href={item.path} key={item.path} onClick={onClose}>
+                <div className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${
+                  isActive 
+                    ? 'bg-[#1f2021] text-[#10B981] shadow-lg border border-white/5' 
+                    : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                }`}>
+                  {item.icon}
+                  {item.name}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      <nav className="flex-1 px-5 py-6 flex flex-col gap-3 overflow-y-auto">
-        {menuItems.map((item) => {
-          const isActive = pathname === item.path;
-          return (
-            <Link key={item.name} href={item.path} onClick={handleMenuClick}>
-              <div className={`flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all ${
-                isActive 
-                  ? 'bg-white/5 border-l-4 border-[#10B981] text-[#10B981]' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border-l-4 border-transparent'
-              }`}>
-                {item.icon}
-                <span className="font-bold text-[13px] tracking-widest">{item.name}</span>
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="p-8 border-t border-white/5 shrink-0">
+      {/* TOMBOL LOGOUT AREA */}
+      <div className="px-4">
         <button 
-          onClick={() => {
-            handleMenuClick();
-            router.push('/login');
-          }}
-          className="flex items-center gap-4 text-slate-400 hover:text-red-500 hover:bg-white/5 p-4 rounded-xl transition-all w-full cursor-pointer"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-widest text-slate-500 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 cursor-pointer"
         >
-          <LogOut size={22} />
-          <span className="font-bold text-[13px] tracking-widest uppercase">Keluar Sesi</span>
+          <LogOut size={20} /> KELUAR SESI
         </button>
       </div>
     </aside>

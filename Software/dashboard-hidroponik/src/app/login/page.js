@@ -54,6 +54,10 @@ export default function LoginPage() {
     }
     if (username === 'Admin' && password === '12345') {
       setErrorMessage('');
+      
+      // INI KODINGAN TAMBAHANNYA: MEMBUAT TIKET LOGIN (COOKIE) BERLAKU 1 HARI (86400 detik)
+      document.cookie = "auth_session=true; path=/; max-age=86400";
+      
       router.push('/dashboard');
     } else {
       setErrorMessage('Username atau Password salah!');
