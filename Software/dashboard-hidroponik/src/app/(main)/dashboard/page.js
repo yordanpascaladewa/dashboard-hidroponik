@@ -1,20 +1,22 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send } from 'lucide-react';
+import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock } from 'lucide-react';
 
 export default function DashboardPage() {
   const [telemetry, setTelemetry] = useState({
-    suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY'
+    suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY WAIT'
   });
   const [chartData, setChartData] = useState([]);
   
-  // State untuk form kontrol tanaman & umur bibit
   const [selectedTanaman, setSelectedTanaman] = useState('PAKCOY');
   const [selectedUsia, setSelectedUsia] = useState(1);
   const [statusMessage, setStatusMessage] = useState('');
 
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
+
+  // Cek apakah sistem terkunci (Artinya tanaman aktif dan bukan 'STANDBY WAIT')
+  const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY WAIT';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,9 +58,10 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fungsi untuk mengirim konfigurasi tanaman & umur ke API
   const handleUpdateTanaman = async (e) => {
     e.preventDefault();
+    if (isLocked) return;
+
     setStatusMessage('Mengirim perintah...');
 
     try {
@@ -93,20 +96,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* PANEL KONTROL PEMILIHAN TANAMAN & UMUR BIBIT (BARU) */}
-      <div className="bg-[#1f2021] rounded-2xl p-6 border border-white/5 shadow-lg flex flex-col gap-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-          <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas & Umur Bibit
-        </h2>
+      {/* PANEL KONTROL DENGAN FITUR AUTO-LOCK */}
+      <div className={`bg-[#1f2021] rounded-2xl p-6 border shadow-lg flex flex-col gap-4 relative transition-colors ${
+        isLocked ? 'border-amber-500/30' : 'border-white/5'
+      }`}>
+        <div className="flex justify-between items-center">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas & Umur Bibit
+          </h2>
+          
+          {/* Indikator Status Lock */}
+          {isLocked ? (
+            <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-[11px] font-mono border border-amber-500/20">
+              <Lock size={13} /> TERKUNCI (SISTEM AKTIF)
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-[#10B981] px-3 py-1 rounded-full text-[11px] font-mono border border-emerald-500/20">
+              <span>UNLOCKED (STANDBY)</span>
+            </div>
+          )}
+        </div>
         
         <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          {/* Pilihan Komoditas */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
             <select 
               value={selectedTanaman}
               onChange={(e) => setSelectedTanaman(e.target.value)}
-              className="w-full bg-[#121315] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-[#10B981] font-medium text-sm"
+              disabled={isLocked}
+              className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
+                isLocked ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+              }`}
             >
               {daftarTanaman.map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -114,7 +134,6 @@ export default function DashboardPage() {
             </select>
           </div>
 
-          {/* Pilihan Umur Bibit */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
             <input 
@@ -123,26 +142,39 @@ export default function DashboardPage() {
               max="60"
               value={selectedUsia}
               onChange={(e) => setSelectedUsia(e.target.value)}
-              className="w-full bg-[#121315] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-[#10B981] font-medium text-sm"
+              disabled={isLocked}
+              className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
+                isLocked ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+              }`}
               required
             />
           </div>
 
-          {/* Tombol Kirim */}
           <button 
             type="submit"
-            className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer text-sm uppercase tracking-wider"
+            disabled={isLocked}
+            className={`font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
+              isLocked 
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5' 
+                : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer'
+            }`}
           >
             <Send size={18} /> Terapkan ke Sistem
           </button>
         </form>
+
+        {isLocked && (
+          <p className="text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
+            ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci karena sistem hidroponik sedang berjalan. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama hingga kembali ke mode standby)[cite: 2].
+          </p>
+        )}
 
         {statusMessage && (
           <p className="text-xs font-mono text-[#10B981] mt-1 animate-pulse">{statusMessage}</p>
         )}
       </div>
 
-      {/* METRIC CARDS[cite: 4] */}
+      {/* METRIC CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24}/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" />
@@ -151,7 +183,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* GRAFIK[cite: 4] */}
+        {/* GRAFIK */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
           <h2 className="text-lg font-bold mb-8">Tren Kualitas Air (Real-Time)</h2>
           <div className="flex-1 w-full h-[300px]">
@@ -173,7 +205,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* QUICK HARDWARE INFO[cite: 4] */}
+        {/* QUICK HARDWARE INFO */}
         <div className="bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg flex flex-col gap-6">
           <h3 className="text-lg font-bold border-b border-white/5 pb-4">Info Singkat</h3>
           
