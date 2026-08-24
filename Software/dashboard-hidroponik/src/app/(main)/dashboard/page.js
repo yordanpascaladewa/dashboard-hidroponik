@@ -1,13 +1,20 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout } from 'lucide-react';
+import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send } from 'lucide-react';
 
 export default function DashboardPage() {
   const [telemetry, setTelemetry] = useState({
     suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY'
   });
   const [chartData, setChartData] = useState([]);
+  
+  // State untuk form kontrol tanaman & umur bibit
+  const [selectedTanaman, setSelectedTanaman] = useState('PAKCOY');
+  const [selectedUsia, setSelectedUsia] = useState(1);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -17,7 +24,6 @@ export default function DashboardPage() {
         if (json.data && json.data.length > 0) {
           const latest = json.data[0];
           
-          // Tambahin fluktuasi kecil biar angka di Card ikut hidup & dinamis
           const dynamicPh = latest.ph + (Math.sin(Date.now() / 5000) * 0.05);
           const dynamicTds = latest.tds + Math.floor(Math.sin(Date.now() / 4000) * 8);
           const dynamicSuhu = latest.suhu + (Math.cos(Date.now() / 6000) * 0.2);
@@ -29,7 +35,6 @@ export default function DashboardPage() {
             suhu: parseFloat(dynamicSuhu.toFixed(1))
           });
 
-          // Riwayat grafik dengan efek gelombang halus
           const history = json.data.slice(0, 20).reverse().map((item, index) => {
             const jitterPh = item.ph + (Math.sin(index * 0.6) * 0.08);
             const jitterTds = item.tds + (Math.cos(index * 0.5) * 12);
@@ -47,21 +52,97 @@ export default function DashboardPage() {
     };
     
     fetchData();
-    // Jeda fetch per 1 menit
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fungsi untuk mengirim konfigurasi tanaman & umur ke API
+  const handleUpdateTanaman = async (e) => {
+    e.preventDefault();
+    setStatusMessage('Mengirim perintah...');
+
+    try {
+      const res = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tanaman: selectedTanaman,
+          usia_hari: parseInt(selectedUsia),
+          aktif: true
+        })
+      });
+
+      if (res.ok) {
+        setStatusMessage('Berhasil! Alat akan segera menyesuaikan.');
+        setTimeout(() => setStatusMessage(''), 4000);
+      } else {
+        setStatusMessage('Gagal mengirim perintah.');
+      }
+    } catch (err) {
+      console.error(err);
+      setStatusMessage('Terjadi kesalahan koneksi.');
+    }
+  };
 
   return (
     <main className="p-8 md:p-10 w-full flex flex-col gap-8 pb-12">
       <div className="flex justify-between items-end mb-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">System Overview</h1>
-          <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono">Live Telemetry Data</p>
+          <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono">Live Telemetry Data & Control</p>
         </div>
       </div>
 
-      {/* METRIC CARDS */}
+      {/* PANEL KONTROL PEMILIHAN TANAMAN & UMUR BIBIT (BARU) */}
+      <div className="bg-[#1f2021] rounded-2xl p-6 border border-white/5 shadow-lg flex flex-col gap-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas & Umur Bibit
+        </h2>
+        
+        <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          {/* Pilihan Komoditas */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
+            <select 
+              value={selectedTanaman}
+              onChange={(e) => setSelectedTanaman(e.target.value)}
+              className="w-full bg-[#121315] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-[#10B981] font-medium text-sm"
+            >
+              {daftarTanaman.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Pilihan Umur Bibit */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
+            <input 
+              type="number" 
+              min="1" 
+              max="60"
+              value={selectedUsia}
+              onChange={(e) => setSelectedUsia(e.target.value)}
+              className="w-full bg-[#121315] border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-[#10B981] font-medium text-sm"
+              required
+            />
+          </div>
+
+          {/* Tombol Kirim */}
+          <button 
+            type="submit"
+            className="bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer text-sm uppercase tracking-wider"
+          >
+            <Send size={18} /> Terapkan ke Sistem
+          </button>
+        </form>
+
+        {statusMessage && (
+          <p className="text-xs font-mono text-[#10B981] mt-1 animate-pulse">{statusMessage}</p>
+        )}
+      </div>
+
+      {/* METRIC CARDS[cite: 4] */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24}/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" />
@@ -70,7 +151,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* GRAFIK */}
+        {/* GRAFIK[cite: 4] */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
           <h2 className="text-lg font-bold mb-8">Tren Kualitas Air (Real-Time)</h2>
           <div className="flex-1 w-full h-[300px]">
@@ -92,7 +173,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* QUICK HARDWARE INFO */}
+        {/* QUICK HARDWARE INFO[cite: 4] */}
         <div className="bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg flex flex-col gap-6">
           <h3 className="text-lg font-bold border-b border-white/5 pb-4">Info Singkat</h3>
           
