@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock } from 'lucide-react';
+import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock, WifiOff } from 'lucide-react';
 
 export default function DashboardPage() {
   const [telemetry, setTelemetry] = useState({
     suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY WAIT'
   });
   const [chartData, setChartData] = useState([]);
+  const [isOnline, setIsOnline] = useState(false);
   
   const [selectedTanaman, setSelectedTanaman] = useState('PAKCOY');
   const [selectedUsia, setSelectedUsia] = useState(1);
@@ -25,20 +26,26 @@ export default function DashboardPage() {
         if (json.data && json.data.length > 0) {
           const latest = json.data[0];
           
+          const dataTime = new Date(latest.timestamp).getTime();
+          const currentTime = new Date().getTime();
+          const diffMinutes = (currentTime - dataTime) / (1000 * 60);
+          const currentOnlineStatus = diffMinutes <= 3;
+          setIsOnline(currentOnlineStatus);
+
           const dynamicPh = latest.ph + (Math.sin(Date.now() / 5000) * 0.05);
           const dynamicTds = latest.tds + Math.floor(Math.sin(Date.now() / 4000) * 8);
           const dynamicSuhu = latest.suhu + (Math.cos(Date.now() / 6000) * 0.2);
 
           setTelemetry({
             ...latest,
-            ph: parseFloat(dynamicPh.toFixed(2)),
-            tds: Math.round(dynamicTds),
-            suhu: parseFloat(dynamicSuhu.toFixed(1))
+            ph: currentOnlineStatus ? parseFloat(dynamicPh.toFixed(2)) : latest.ph,
+            tds: currentOnlineStatus ? Math.round(dynamicTds) : latest.tds,
+            suhu: currentOnlineStatus ? parseFloat(dynamicSuhu.toFixed(1)) : latest.suhu
           });
 
           const history = json.data.slice(0, 20).reverse().map((item, index) => {
-            const jitterPh = item.ph + (Math.sin(index * 0.6) * 0.08);
-            const jitterTds = item.tds + (Math.cos(index * 0.5) * 12);
+            const jitterPh = currentOnlineStatus ? item.ph + (Math.sin(index * 0.6) * 0.08) : item.ph;
+            const jitterTds = currentOnlineStatus ? item.tds + (Math.cos(index * 0.5) * 12) : item.tds;
             
             return {
               waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -49,7 +56,10 @@ export default function DashboardPage() {
           
           setChartData(history);
         }
-      } catch (error) { console.error(error); }
+      } catch (error) { 
+        console.error(error); 
+        setIsOnline(false);
+      }
     };
     
     fetchData();
@@ -59,7 +69,7 @@ export default function DashboardPage() {
 
   const handleUpdateTanaman = async (e) => {
     e.preventDefault();
-    if (isLocked) return;
+    if (isLocked || !isOnline) return;
 
     setStatusMessage('Mengirim perintah...');
 
@@ -95,18 +105,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* PANEL KONTROL DENGAN FITUR AUTO-LOCK */}
+      {/* PANEL KONTROL */}
       <div className={`bg-[#1f2021] rounded-2xl p-6 border shadow-lg flex flex-col gap-4 relative transition-colors ${
-        isLocked ? 'border-amber-500/30' : 'border-white/5'
+        !isOnline ? 'border-red-500/30' : isLocked ? 'border-amber-500/30' : 'border-white/5'
       }`}>
         <div className="flex justify-between items-center">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas & Umur Bibit
           </h2>
           
-          {isLocked ? (
+          {!isOnline ? (
+            <div className="flex items-center gap-1.5 bg-red-500/10 text-red-400 px-3 py-1 rounded-full text-[11px] font-mono border border-red-500/20">
+              <WifiOff size={13} /> DIBLOKIR (OFFLINE)
+            </div>
+          ) : isLocked ? (
             <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-[11px] font-mono border border-amber-500/20">
-              <Lock size={13} /> TERKUNCI (SISTEM AKTIF)
+              <Lock size={13} /> TERKUNCI (AKTIF)
             </div>
           ) : (
             <div className="flex items-center gap-1.5 bg-emerald-500/10 text-[#10B981] px-3 py-1 rounded-full text-[11px] font-mono border border-emerald-500/20">
@@ -121,9 +135,9 @@ export default function DashboardPage() {
             <select 
               value={selectedTanaman}
               onChange={(e) => setSelectedTanaman(e.target.value)}
-              disabled={isLocked}
+              disabled={isLocked || !isOnline}
               className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                isLocked ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
               }`}
             >
               {daftarTanaman.map((t) => (
@@ -140,9 +154,9 @@ export default function DashboardPage() {
               max="60"
               value={selectedUsia}
               onChange={(e) => setSelectedUsia(e.target.value)}
-              disabled={isLocked}
+              disabled={isLocked || !isOnline}
               className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                isLocked ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
               }`}
               required
             />
@@ -150,9 +164,9 @@ export default function DashboardPage() {
 
           <button 
             type="submit"
-            disabled={isLocked}
+            disabled={isLocked || !isOnline}
             className={`font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
-              isLocked 
+              isLocked || !isOnline 
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5' 
                 : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer'
             }`}
@@ -161,29 +175,34 @@ export default function DashboardPage() {
           </button>
         </form>
 
-        {isLocked && (
+        {isLocked && isOnline && (
           <p className="text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
             ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci karena sistem hidroponik sedang berjalan. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama hingga kembali ke mode standby).
           </p>
         )}
 
         {statusMessage && (
-          <p className="text-xs font-mono text-[#10B981] mt-1 animate-pulse">{statusMessage}</p>
+          <p className={`text-xs font-mono mt-1 animate-pulse ${statusMessage.includes('Gagal') || statusMessage.includes('kesalahan') ? 'text-red-400' : 'text-[#10B981]'}`}>
+            {statusMessage}
+          </p>
         )}
       </div>
 
       {/* METRIC CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24}/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24}/>} color="#10B981" />
         <MetricCard label="Nutrisi (TDS)" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24}/>} color="#8B5CF6" />
         <MetricCard label="Fase Tumbuh" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={24}/>} color="#dfed1a" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* GRAFIK DENGAN FIXED TICKS */}
+      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
+        {/* GRAFIK */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
-          <h2 className="text-lg font-bold mb-8">Tren Kualitas Air (Real-Time)</h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-lg font-bold">Tren Kualitas Air (Real-Time)</h2>
+            {!isOnline && <span className="text-xs font-mono text-red-400 border border-red-500/20 bg-red-500/10 px-2 py-1 rounded">DATA PAUSED</span>}
+          </div>
           <div className="flex-1 w-full h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -193,33 +212,11 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} dy={10} />
-                
-                {/* Sumbu Y Kiri (pH) dengan ticks bulat teratur */}
-                <YAxis 
-                  yId="left" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fontSize: 10, fill: '#64748b'}} 
-                  domain={[5, 9]} 
-                  ticks={[5, 6, 7, 8, 9]}
-                  tickFormatter={(val) => val.toFixed(1)}
-                />
-                
-                {/* Sumbu Y Kanan (TDS) dengan ticks bulat teratur */}
-                <YAxis 
-                  yId="right" 
-                  orientation="right" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fontSize: 10, fill: '#64748b'}} 
-                  domain={[800, 1600]} 
-                  ticks={[800, 1000, 1200, 1400, 1600]}
-                  tickFormatter={(val) => Math.round(val)}
-                />
-
+                <YAxis yId="left" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[5, 9]} ticks={[5, 6, 7, 8, 9]} tickFormatter={(val) => val.toFixed(1)} />
+                <YAxis yId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[800, 1600]} ticks={[800, 1000, 1200, 1400, 1600]} tickFormatter={(val) => Math.round(val)} />
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }} />
-                <Area isAnimationActive={true} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
-                <Area isAnimationActive={true} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
+                <Area isAnimationActive={isOnline} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
+                <Area isAnimationActive={isOnline} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -232,21 +229,23 @@ export default function DashboardPage() {
           <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex justify-between items-center relative overflow-hidden">
             <div className="relative z-10">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Komoditas Aktif</span>
-              <span className="text-3xl font-black uppercase text-[#10B981] tracking-tight">{telemetry.tanaman || 'STANDBY'}</span>
+              <span className={`text-3xl font-black uppercase tracking-tight ${!isOnline ? 'text-red-400' : 'text-[#10B981]'}`}>
+                {!isOnline ? 'OFFLINE' : telemetry.tanaman || 'STANDBY'}
+              </span>
             </div>
             <Sprout size={56} className="text-white/10 absolute right-4 bottom-2 -rotate-12" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-5 bg-white/5 rounded-2xl border border-white/5 text-center flex flex-col justify-center items-center gap-3">
-              <BatteryCharging size={28} className="text-[#63f7ff]" />
+              <BatteryCharging size={28} className={isOnline ? 'text-[#63f7ff]' : 'text-slate-500'} />
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tegangan</span>
                 <span className="text-xl font-black">{telemetry.voltaseBaterai?.toFixed(1) || '--'} V</span>
               </div>
             </div>
             <div className="p-5 bg-white/5 rounded-2xl border border-white/5 text-center flex flex-col justify-center items-center gap-3">
-              <Zap size={28} className="text-[#dfed1a]" />
+              <Zap size={28} className={isOnline ? 'text-[#dfed1a]' : 'text-slate-500'} />
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Arus Listrik</span>
                 <span className="text-xl font-black">{telemetry.energiSolar || '--'} mA</span>
