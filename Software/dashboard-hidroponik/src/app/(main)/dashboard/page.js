@@ -15,7 +15,6 @@ export default function DashboardPage() {
 
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
 
-  // Cek apakah sistem terkunci (Artinya tanaman aktif dan bukan 'STANDBY WAIT')
   const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY WAIT';
 
   useEffect(() => {
@@ -105,7 +104,6 @@ export default function DashboardPage() {
             <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas & Umur Bibit
           </h2>
           
-          {/* Indikator Status Lock */}
           {isLocked ? (
             <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-[11px] font-mono border border-amber-500/20">
               <Lock size={13} /> TERKUNCI (SISTEM AKTIF)
@@ -165,7 +163,7 @@ export default function DashboardPage() {
 
         {isLocked && (
           <p className="text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
-            ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci karena sistem hidroponik sedang berjalan. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama hingga kembali ke mode standby)[cite: 2].
+            ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci karena sistem hidroponik sedang berjalan. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama hingga kembali ke mode standby).
           </p>
         )}
 
@@ -183,7 +181,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* GRAFIK */}
+        {/* GRAFIK DENGAN FIXED TICKS */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-7 border border-white/5 shadow-lg min-h-[400px] flex flex-col">
           <h2 className="text-lg font-bold mb-8">Tren Kualitas Air (Real-Time)</h2>
           <div className="flex-1 w-full h-[300px]">
@@ -195,8 +193,30 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} dy={10} />
-                <YAxis yId="left" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[5, 9]} />
-                <YAxis yId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} domain={[800, 1600]} />
+                
+                {/* Sumbu Y Kiri (pH) dengan ticks bulat teratur */}
+                <YAxis 
+                  yId="left" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 10, fill: '#64748b'}} 
+                  domain={[5, 9]} 
+                  ticks={[5, 6, 7, 8, 9]}
+                  tickFormatter={(val) => val.toFixed(1)}
+                />
+                
+                {/* Sumbu Y Kanan (TDS) dengan ticks bulat teratur */}
+                <YAxis 
+                  yId="right" 
+                  orientation="right" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 10, fill: '#64748b'}} 
+                  domain={[800, 1600]} 
+                  ticks={[800, 1000, 1200, 1400, 1600]}
+                  tickFormatter={(val) => Math.round(val)}
+                />
+
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }} />
                 <Area isAnimationActive={true} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
                 <Area isAnimationActive={true} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
