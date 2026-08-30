@@ -43,13 +43,17 @@ export default function DashboardPage() {
 
         if (jsonChart.data) {
           const history = jsonChart.data.slice().reverse().map((item) => {
-            let timeStr = '';
             const dt = new Date(item.timestamp);
             
+            // Format waktu dibikin SELALU UNIK untuk menghindari bug "Dot Hilang" di Recharts
+            const datePart = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            const timePart = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            let timeStr = '';
             if (chartRange === 'realtime' || chartRange === '24h') {
-              timeStr = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+              timeStr = timePart; // cth: "14:30"
             } else {
-              timeStr = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+              timeStr = `${datePart} ${timePart}`; // cth: "31 Agu 14:30" (Selalu unik!)
             }
 
             return {
@@ -153,7 +157,23 @@ export default function DashboardPage() {
                   <linearGradient id="colorTds" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.4}/><stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} dy={10} minTickGap={20} />
+                
+                {/* Format sumbu X dimanipulasi agar kelihatan rapi di bawah, tapi data aslinya tetap unik */}
+                <XAxis 
+                  dataKey="waktu" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 9, fill: '#64748b'}} 
+                  dy={10} 
+                  minTickGap={20} 
+                  tickFormatter={(str) => {
+                    if (chartRange === '7d' || chartRange === '30d') {
+                      const parts = str.split(' ');
+                      if (parts.length >= 2) return `${parts[0]} ${parts[1]}`; // Cuma nampilin "31 Agu"
+                    }
+                    return str;
+                  }}
+                />
                 
                 <YAxis 
                   yAxisId="left" 
@@ -172,7 +192,6 @@ export default function DashboardPage() {
                 
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px' }} />
                 
-                {/* PERBAIKAN: Animasi dimatikan dan style activeDot dipertegas */}
                 <Area yAxisId="left" isAnimationActive={false} type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" activeDot={{ r: 5, stroke: '#121315', strokeWidth: 3 }} />
                 <Area yAxisId="right" isAnimationActive={false} type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" activeDot={{ r: 5, stroke: '#121315', strokeWidth: 3 }} />
               </AreaChart>
