@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import clientPromise from "@/lib/mongodb";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
@@ -9,17 +9,20 @@ export const authOptions = {
       name: "Credentials",
       async authorize(credentials) {
         try {
-          const client = await clientPromise;
+          // 1. Langsung pakai Mongoose (Bypass file lokal lib/mongodb yang error)
+          if (mongoose.connection.readyState !== 1) {
+            await mongoose.connect(process.env.MONGODB_URI);
+          }
           
-          // Sistem cerdas pendeteksi format database Vercel
-          // (Mengatasi error: "collection is not a function")
-          const db = typeof client.db === 'function' ? client.db() : (client.db || client);
+          // 2. Ambil objek database asli (native db) dari Mongoose
+          const db = mongoose.connection.db;
           
+          // 3. Cari user di koleksi 'users'
           const user = await db.collection("users").findOne({ username: credentials.username });
           
           if (!user) throw new Error("Akun tidak ditemukan!");
 
-          // Cek password (bisa format Hash Bcrypt atau Plain Text)
+          // 4. Cek password (bisa format Hash Bcrypt atau Teks Biasa)
           let isValid = false;
           if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
             isValid = await bcrypt.compare(credentials.password, user.password);
