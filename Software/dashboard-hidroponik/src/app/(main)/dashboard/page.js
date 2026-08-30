@@ -13,42 +13,57 @@ export default function DashboardPage() {
   });
   const [chartData, setChartData] = useState([]);
   const [isOnline, setIsOnline] = useState(false);
+  const [chartRange, setChartRange] = useState('realtime'); // State tombol rentang waktu
   
   const [selectedTanaman, setSelectedTanaman] = useState('PAKCOY');
   const [selectedUsia, setSelectedUsia] = useState(1);
   const [statusMessage, setStatusMessage] = useState('');
 
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
-
   const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY WAIT';
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/telemetry', { cache: 'no-store' });
-        const json = await res.json();
+        // 1. Selalu ambil data Real-time (10 detik terakhir) untuk update Kartu Metrik
+        const resLatest = await fetch('/api/telemetry?range=realtime', { cache: 'no-store' });
+        const jsonLatest = await resLatest.json();
         
-        if (json.data && json.data.length > 0) {
-          const latest = json.data[0];
-          
+        if (jsonLatest.data && jsonLatest.data.length > 0) {
+          const latest = jsonLatest.data[0];
+          setTelemetry(latest);
+
           const dataTime = new Date(latest.timestamp).getTime();
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
-          const currentOnlineStatus = diffSeconds <= 35;
-          setIsOnline(currentOnlineStatus);
+          setIsOnline(diffSeconds <= 35);
+        }
 
-          setTelemetry(latest);
+        // 2. Ambil data Historis untuk Grafik sesuai tombol yang dipilih
+        const resChart = await fetch(`/api/telemetry?range=${chartRange}`, { cache: 'no-store' });
+        const jsonChart = await resChart.json();
 
-          const history = json.data.slice(0, 20).reverse().map((item) => {
+        if (jsonChart.data) {
+          const history = jsonChart.data.slice().reverse().map((item) => {
+            let timeStr = '';
+            const dt = new Date(item.timestamp);
+            
+            // Format waktu beda-beda tergantung rentang hari
+            if (chartRange === 'realtime' || chartRange === '24h') {
+              timeStr = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            } else {
+              timeStr = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            }
+
             return {
-              waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+              waktu: timeStr,
               pH: parseFloat(item.ph.toFixed(2)),
               TDS: Math.round(item.tds)
             };
           });
-          
           setChartData(history);
         }
+
       } catch (error) { 
         console.error(error); 
         setIsOnline(false);
@@ -58,7 +73,7 @@ export default function DashboardPage() {
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [chartRange]); // Load ulang grafik kalau tombol waktu diganti
 
   const handleUpdateTanaman = async (e) => {
     e.preventDefault();
@@ -70,11 +85,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tanaman: selectedTanaman,
-          usia_hari: parseInt(selectedUsia),
-          aktif: true
-        })
+        body: JSON.stringify({ tanaman: selectedTanaman, usia_hari: parseInt(selectedUsia), aktif: true })
       });
 
       if (res.ok) {
@@ -84,7 +95,6 @@ export default function DashboardPage() {
         setStatusMessage('Gagal mengirim perintah. Pastikan Anda Admin.');
       }
     } catch (err) {
-      console.error(err);
       setStatusMessage('Terjadi kesalahan koneksi.');
     }
   };
@@ -94,9 +104,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="p-5 md:p-10 w-full flex flex-col gap-6 md:gap-8 pb-12">
+    <main className="p-5 md:p-10 w-full flex flex-col gap-6 md:gap-8 pb-12 animate-in fade-in duration-500">
       
-      {/* 1. HEADER */}
+      {/* 1. HEADER HALAMAN */}
       <div className="flex justify-between items-end mb-1 px-1">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">System Overview</h1>
@@ -104,7 +114,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. METRIC CARDS (Dipindah ke atas agar fokus ke monitoring data) */}
+      {/* 2. METRIC CARDS UTAMA (Ditaruh Paling Atas biar FOKUS) */}
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={20} className="md:w-6 md:h-6"/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={20} className="md:w-6 md:h-6"/>} color="#10B981" />
@@ -112,14 +122,35 @@ export default function DashboardPage() {
         <MetricCard label="Fase" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={20} className="md:w-6 md:h-6"/>} color="#dfed1a" />
       </div>
 
-      {/* 3. CHART & INFO SINGKAT (Area visualisasi utama) */}
+      {/* 3. AREA GRAFIK & DIAGNOSTIK */}
       <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         
-        {/* GRAFIK UKURAN FLEKSIBEL */}
+        {/* GRAFIK ADAPTIF */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-5 md:p-7 border border-white/5 shadow-lg flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-base md:text-lg font-bold">Tren Kualitas Air (Real-Time)</h2>
-            {!isOnline && <span className="text-[9px] md:text-xs font-mono text-red-400 border border-red-500/20 bg-red-500/10 px-2 py-1 rounded">PAUSED</span>}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 className="text-base md:text-lg font-bold">Tren Kualitas Air</h2>
+            
+            {/* TOMBOL PEMILIH WAKTU */}
+            <div className="flex bg-[#121315] p-1.5 rounded-xl border border-white/5 shadow-inner">
+              {[
+                { id: 'realtime', label: 'Live' },
+                { id: '24h', label: '24H' },
+                { id: '7d', label: '7 Hari' },
+                { id: '30d', label: '30 Hari' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setChartRange(tab.id)}
+                  className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-lg transition-all ${
+                    chartRange === tab.id 
+                      ? 'bg-[#10B981] text-[#121315] shadow-md' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
           
           <div className="w-full min-h-[250px] md:min-h-[300px]">
@@ -131,8 +162,26 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} dy={10} minTickGap={20} />
-                <YAxis yId="left" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} domain={[5, 9]} ticks={[5, 6, 7, 8, 9]} tickFormatter={(val) => val.toFixed(1)} />
-                <YAxis yId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} domain={[800, 1600]} ticks={[800, 1000, 1200, 1400, 1600]} tickFormatter={(val) => Math.round(val)} />
+                
+                {/* Y-AXIS ADAPTIF (FUNGSI BARU) */}
+                <YAxis 
+                  yId="left" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 9, fill: '#64748b'}} 
+                  domain={[(dataMin) => Math.max(0, dataMin - 0.5), (dataMax) => dataMax + 0.5]} 
+                  tickFormatter={(val) => val.toFixed(1)} 
+                />
+                <YAxis 
+                  yId="right" 
+                  orientation="right" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fontSize: 9, fill: '#64748b'}} 
+                  domain={[(dataMin) => Math.max(0, dataMin - 50), (dataMax) => dataMax + 50]} 
+                  tickFormatter={(val) => Math.round(val)} 
+                />
+                
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px' }} />
                 <Area isAnimationActive={isOnline} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
                 <Area isAnimationActive={isOnline} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
@@ -141,7 +190,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* QUICK HARDWARE INFO */}
+        {/* INFO SINGKAT (Di Sebelah Grafik) */}
         <div className="bg-[#1f2021] rounded-2xl p-5 md:p-7 border border-white/5 shadow-lg flex flex-col gap-5 md:gap-6">
           <h3 className="text-base md:text-lg font-bold border-b border-white/5 pb-3 md:pb-4">Info Singkat</h3>
           
@@ -174,67 +223,62 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. PANEL KONTROL (Dipindah ke bawah sebagai area Action) */}
-      <div className={`mt-2 bg-[#1f2021] rounded-2xl p-5 md:p-6 border shadow-lg flex flex-col gap-4 relative transition-colors ${
+      {/* 4. KONTROL KOMODITAS (Dipindah ke Paling Bawah) */}
+      <div className={`bg-[#1f2021] rounded-2xl p-5 md:p-7 border shadow-lg flex flex-col gap-4 relative transition-colors ${
         !isOnline ? 'border-red-500/30' : isLocked ? 'border-amber-500/30' : 'border-white/5'
       }`}>
-        <div className="flex justify-between items-center mb-1">
+        <div className="flex justify-between items-center mb-2">
           <h2 className="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Sprout size={18} className="text-[#10B981]" /> Kontrol Komoditas
           </h2>
           
           {!isOnline ? (
-            <div className="flex items-center gap-1.5 bg-red-500/10 text-red-400 px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[11px] font-mono border border-red-500/20">
-              <WifiOff size={13} /> <span className="hidden md:inline">DIBLOKIR</span> (OFFLINE)
+            <div className="flex items-center gap-1.5 bg-red-500/10 text-red-400 px-3 py-1 rounded-full text-[10px] md:text-xs font-mono border border-red-500/20">
+              <WifiOff size={14} /> <span className="hidden md:inline">DIBLOKIR</span> (OFFLINE)
             </div>
           ) : isLocked ? (
-            <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[11px] font-mono border border-amber-500/20">
-              <Lock size={13} /> TERKUNCI <span className="hidden md:inline">(AKTIF)</span>
+            <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-[10px] md:text-xs font-mono border border-amber-500/20">
+              <Lock size={14} /> TERKUNCI <span className="hidden md:inline">(AKTIF)</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-[#10B981] px-2 md:px-3 py-1 rounded-full text-[9px] md:text-[11px] font-mono border border-emerald-500/20">
+            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-[#10B981] px-3 py-1 rounded-full text-[10px] md:text-xs font-mono border border-emerald-500/20">
               <span>UNLOCKED</span>
             </div>
           )}
         </div>
         
-        {/* LOGIKA RBAC KONDISIONAL (ADMIN VS USER) */}
         {!isAdmin ? (
-          <div className="flex flex-col items-center justify-center p-6 bg-[#121315] border border-white/5 rounded-xl gap-2 mt-2">
-            <Lock size={28} className="text-red-400/80 mb-1" />
-            <span className="text-sm font-bold text-slate-300">Akses Ditolak</span>
-            <span className="text-[10px] md:text-xs text-slate-500 text-center max-w-md">Akun Anda <b>(User)</b> hanya memiliki hak akses pantauan pasif (Read-Only). Hubungi <b>Administrator</b> untuk mengubah setpoint nutrisi komoditas.</span>
+          <div className="flex flex-col items-center justify-center p-8 bg-[#121315] border border-white/5 rounded-2xl gap-3">
+            <Lock size={32} className="text-red-400/80 mb-1" />
+            <span className="text-base font-bold text-slate-200">Akses Ditolak</span>
+            <span className="text-[11px] md:text-sm text-slate-500 text-center max-w-lg">Akun Anda <b>(User)</b> hanya memiliki hak akses pantauan pasif. Hubungi <b>Administrator</b> untuk mengubah setpoint nutrisi.</span>
           </div>
         ) : (
           <>
-            <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-end mt-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
+            <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-[#121315] p-5 rounded-2xl border border-white/5">
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
                 <select 
                   value={selectedTanaman}
                   onChange={(e) => setSelectedTanaman(e.target.value)}
                   disabled={isLocked || !isOnline}
-                  className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                  className={`w-full bg-[#1f2021] border rounded-xl p-3.5 text-white font-medium text-sm transition-all outline-none ${
+                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 hover:border-white/20 focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981]'
                   }`}
                 >
-                  {daftarTanaman.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  {daftarTanaman.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
                 <input 
-                  type="number" 
-                  min="1" 
-                  max="60"
+                  type="number" min="1" max="60"
                   value={selectedUsia}
                   onChange={(e) => setSelectedUsia(e.target.value)}
                   disabled={isLocked || !isOnline}
-                  className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                  className={`w-full bg-[#1f2021] border rounded-xl p-3.5 text-white font-medium text-sm transition-all outline-none ${
+                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 hover:border-white/20 focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981]'
                   }`}
                   required
                 />
@@ -243,22 +287,24 @@ export default function DashboardPage() {
               <button 
                 type="submit"
                 disabled={isLocked || !isOnline}
-                className={`font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
+                className={`font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
                   isLocked || !isOnline 
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5' 
-                    : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer'
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5' 
+                    : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:scale-[1.02] cursor-pointer'
                 }`}
               >
-                <Send size={18} /> Terapkan
+                <Send size={18} /> Terapkan Setpoint
               </button>
             </form>
 
             {isLocked && isOnline && (
-              <p className="text-[10px] md:text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 leading-relaxed mt-1">
-                ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama).
-              </p>
+              <div className="flex items-start gap-3 bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 mt-2">
+                <span className="text-amber-400 text-lg">⚠️</span>
+                <p className="text-xs font-mono text-amber-400/90 leading-relaxed pt-0.5">
+                  <b>Pemberitahuan:</b> Komoditas dan umur bibit sedang terkunci oleh sistem operasional. Untuk mengubah komoditas baru, silakan lakukan <b>Reset Manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan tahan 2 detik).
+                </p>
+              </div>
             )}
-
             {statusMessage && (
               <p className={`text-xs font-mono mt-1 animate-pulse ${statusMessage.includes('Gagal') || statusMessage.includes('kesalahan') ? 'text-red-400' : 'text-[#10B981]'}`}>
                 {statusMessage}
@@ -274,16 +320,14 @@ export default function DashboardPage() {
 
 function MetricCard({ label, value, unit, icon, color }) {
   return (
-    <div className="bg-[#1f2021] rounded-2xl p-4 md:p-6 border border-white/5 shadow-lg flex flex-col gap-3 md:gap-4 hover:border-white/10 transition-colors">
+    <div className="bg-[#1f2021] rounded-2xl p-5 md:p-6 border border-white/5 shadow-lg flex flex-col gap-3 md:gap-4 hover:border-white/10 transition-colors">
       <div className="flex justify-between items-start">
-        <span className="text-[9px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
-        <div className="p-2 md:p-2.5 rounded-xl bg-white/5" style={{ color: color }}>
-          {icon}
-        </div>
+        <span className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
+        <div className="p-2 md:p-2.5 rounded-xl bg-white/5" style={{ color: color }}>{icon}</div>
       </div>
       <div className="flex items-baseline gap-1.5 md:gap-2">
-        <span className="text-2xl md:text-4xl font-black font-mono tracking-tight">{value}</span>
-        <span className="text-[10px] md:text-xs font-bold text-slate-500" style={{ color }}>{unit}</span>
+        <span className="text-3xl md:text-4xl font-black font-mono tracking-tight">{value}</span>
+        <span className="text-[11px] md:text-xs font-bold text-slate-500" style={{ color }}>{unit}</span>
       </div>
     </div>
   );
