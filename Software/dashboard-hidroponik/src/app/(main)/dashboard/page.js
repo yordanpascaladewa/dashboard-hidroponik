@@ -35,7 +35,6 @@ export default function DashboardPage() {
           const dataTime = new Date(latest.timestamp).getTime();
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
-          // Toleransi super ketat 15 detik
           setIsOnline(diffSeconds <= 15);
         }
 
@@ -69,7 +68,6 @@ export default function DashboardPage() {
     };
     
     fetchData();
-    // Tarik data grafik dan metrik lebih cepat tiap 3 detik
     const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, [chartRange]); 
@@ -157,11 +155,10 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} dy={10} minTickGap={20} />
                 
-                {/* PERBAIKAN GRAFIK: yAxisId untuk memisahkan skala pH dan TDS */}
                 <YAxis 
                   yAxisId="left" 
                   hide={true} 
-                  domain={['dataMin - 0.5', 'dataMax + 0.5']} 
+                  domain={[(dataMin) => Math.max(0, parseFloat((dataMin - 0.5).toFixed(2))), (dataMax) => parseFloat((dataMax + 0.5).toFixed(2))]} 
                 />
                 <YAxis 
                   yAxisId="right" 
@@ -169,13 +166,15 @@ export default function DashboardPage() {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{fontSize: 9, fill: '#64748b'}} 
-                  domain={['dataMin - 50', 'dataMax + 50']} 
+                  domain={[(dataMin) => Math.max(0, Math.floor(dataMin - 50)), (dataMax) => Math.ceil(dataMax + 50)]} 
                   tickFormatter={(val) => Math.round(val)} 
                 />
                 
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px' }} />
-                <Area yAxisId="left" isAnimationActive={isOnline} type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
-                <Area yAxisId="right" isAnimationActive={isOnline} type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
+                
+                {/* PERBAIKAN: Animasi dimatikan dan style activeDot dipertegas */}
+                <Area yAxisId="left" isAnimationActive={false} type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" activeDot={{ r: 5, stroke: '#121315', strokeWidth: 3 }} />
+                <Area yAxisId="right" isAnimationActive={false} type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" activeDot={{ r: 5, stroke: '#121315', strokeWidth: 3 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
