@@ -9,20 +9,20 @@ export const authOptions = {
       name: "Credentials",
       async authorize(credentials) {
         try {
-          // 1. Langsung pakai Mongoose (Bypass file lokal lib/mongodb yang error)
           if (mongoose.connection.readyState !== 1) {
             await mongoose.connect(process.env.MONGODB_URI);
           }
           
-          // 2. Ambil objek database asli (native db) dari Mongoose
-          const db = mongoose.connection.db;
+          // 1. PAKSA nembak ke database 'hidroponik' (jaga-jaga Vercel nyasar ke DB 'test')
+          const db = mongoose.connection.useDb("hidroponik");
           
-          // 3. Cari user di koleksi 'users'
-          const user = await db.collection("users").findOne({ username: credentials.username });
+          // 2. Hapus spasi yang nggak sengaja keketik di form login
+          const safeUsername = credentials.username.trim();
+          
+          const user = await db.collection("users").findOne({ username: safeUsername });
           
           if (!user) throw new Error("Akun tidak ditemukan!");
 
-          // 4. Cek password (bisa format Hash Bcrypt atau Teks Biasa)
           let isValid = false;
           if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
             isValid = await bcrypt.compare(credentials.password, user.password);
