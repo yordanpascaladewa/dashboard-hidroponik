@@ -10,8 +10,10 @@ export const authOptions = {
       async authorize(credentials) {
         try {
           const client = await clientPromise;
-          // Mendukung berbagai format kembalian MongoDB Atlas di Vercel agar tidak crash
-          const db = typeof client.db === 'function' ? client.db("hidroponik") : client;
+          
+          // Sistem cerdas pendeteksi format database Vercel
+          // (Mengatasi error: "collection is not a function")
+          const db = typeof client.db === 'function' ? client.db() : (client.db || client);
           
           const user = await db.collection("users").findOne({ username: credentials.username });
           
@@ -27,7 +29,6 @@ export const authOptions = {
 
           if (!isValid) throw new Error("Password salah!");
 
-          // Berhasil! Kirim data user beserta role-nya ke sesi
           return { id: user._id.toString(), username: user.username, role: user.role };
         } catch (error) {
           console.error("Auth Error:", error.message);
