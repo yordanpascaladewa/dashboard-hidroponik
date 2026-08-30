@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Activity, RefreshCcw, Zap, Cpu } from 'lucide-react';
+import { Activity, Zap, Cpu, Droplets } from 'lucide-react';
 
 export default function HardwareStatusPage() {
   const [telemetry, setTelemetry] = useState({});
@@ -23,7 +23,6 @@ export default function HardwareStatusPage() {
           
           setIsOnline(diffMinutes <= 3);
 
-          // FORMATTER TANGGAL LENGKAP INDONESIA
           const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
           const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
           
@@ -50,9 +49,10 @@ export default function HardwareStatusPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Logika pembacaan status relay dari database (0 = OFF, 1 = ON)
-  const isDoserActive = telemetry.relay_doser_a === 1 || telemetry.relay_doser_b === 1;
+  // Memisahkan logika pembacaan status relay
   const isPhUpActive = telemetry.relay_ph_up === 1;
+  const isDoserAActive = telemetry.relay_doser_a === 1;
+  const isDoserBActive = telemetry.relay_doser_b === 1;
 
   return (
     <main className="p-5 md:p-10 w-full flex flex-col gap-8 pb-12 animate-in fade-in duration-500">
@@ -72,23 +72,36 @@ export default function HardwareStatusPage() {
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-1">Relay Modules</h2>
           
           <HardwareCard 
-            icon={<Activity size={24} className={isOnline ? "text-[#10B981]" : "text-slate-500"} />}
+            icon={<Activity size={24} className={isOnline && isPhUpActive ? "text-[#10B981]" : "text-slate-500"} />}
             title="Pompa Sirkulasi Utama / pH Up"
             subtitle="ACTIVE RUNNING (RELAY PIN GPIO)"
             value={!isOnline ? "OFFLINE" : isPhUpActive ? "INJECTING" : "STANDBY"}
             isActive={isOnline && isPhUpActive}
             isOffline={!isOnline}
+            activeColor="bg-[#10B981]"
+            activeTextColor="text-[#10B981]"
           />
 
           <HardwareCard 
-            icon={<RefreshCcw size={24} className={isDoserActive ? "text-purple-400" : "text-slate-500"} />}
-            title="Doser Nutrisi A & B"
-            subtitle="AUTO DOSING SYSTEM"
-            value={!isOnline ? "OFFLINE" : isDoserActive ? "DOSING" : "STANDBY"}
-            isActive={isDoserActive}
+            icon={<Droplets size={24} className={isDoserAActive ? "text-purple-400" : "text-slate-500"} />}
+            title="Doser Nutrisi A"
+            subtitle="AUTO DOSING SYSTEM (RELAY A)"
+            value={!isOnline ? "OFFLINE" : isDoserAActive ? "DOSING A" : "STANDBY"}
+            isActive={isDoserAActive}
             isOffline={!isOnline}
             activeColor="bg-purple-500"
             activeTextColor="text-purple-400"
+          />
+
+          <HardwareCard 
+            icon={<Droplets size={24} className={isDoserBActive ? "text-blue-400" : "text-slate-500"} />}
+            title="Doser Nutrisi B"
+            subtitle="AUTO DOSING SYSTEM (RELAY B)"
+            value={!isOnline ? "OFFLINE" : isDoserBActive ? "DOSING B" : "STANDBY"}
+            isActive={isDoserBActive}
+            isOffline={!isOnline}
+            activeColor="bg-blue-500"
+            activeTextColor="text-blue-400"
           />
         </div>
 
@@ -96,7 +109,6 @@ export default function HardwareStatusPage() {
         <div className="flex flex-col gap-4">
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-1">Power & Controller</h2>
           
-          {/* Card Sumber Daya */}
           <div className="bg-[#1f2021] rounded-2xl p-5 md:p-6 border border-white/5 shadow-lg flex items-center justify-between transition-colors hover:border-white/10">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/5 rounded-xl text-[#63f7ff]">
@@ -115,7 +127,6 @@ export default function HardwareStatusPage() {
             </div>
           </div>
 
-          {/* CARD ESP32 DENGAN TANGGAL FULL */}
           <div className={`bg-[#1f2021] rounded-2xl p-5 md:p-6 border shadow-lg flex items-center justify-between transition-colors ${isOnline ? 'border-white/5 hover:border-emerald-500/30' : 'border-red-500/20'}`}>
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-xl ${isOnline ? "bg-emerald-500/10 text-[#10B981]" : "bg-red-500/10 text-red-400"}`}>
@@ -123,7 +134,6 @@ export default function HardwareStatusPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-200">ESP32 Microcontroller</h3>
-                {/* INI BAGIAN TANGGAL FULL-NYA */}
                 <p className={`text-[10px] font-mono mt-1.5 ${isOnline ? "text-slate-400" : "text-red-400/80"}`}>
                   Last Sync: <span className="font-semibold">{lastSyncFull}</span>
                 </p>
@@ -143,10 +153,17 @@ export default function HardwareStatusPage() {
   );
 }
 
-// Komponen Card Bantuan Biar Rapi
-function HardwareCard({ icon, title, subtitle, value, isActive, isOffline, activeColor = "bg-[#10B981]", activeTextColor = "text-[#10B981]" }) {
+function HardwareCard({ icon, title, subtitle, value, isActive, isOffline, activeColor, activeTextColor }) {
+  // Parsing kelas border dinamis untuk Tailwind
+  let borderClass = 'border-white/5 hover:border-white/10';
+  if (isActive) {
+    if (activeColor.includes('purple')) borderClass = 'border-purple-500/30';
+    else if (activeColor.includes('blue')) borderClass = 'border-blue-500/30';
+    else borderClass = 'border-emerald-500/30';
+  }
+
   return (
-    <div className={`bg-[#1f2021] rounded-2xl p-5 md:p-6 border shadow-lg flex items-center justify-between transition-colors ${isActive ? `border-${activeColor.split('-')[1]}-500/30` : 'border-white/5 hover:border-white/10'}`}>
+    <div className={`bg-[#1f2021] rounded-2xl p-5 md:p-6 border shadow-lg flex items-center justify-between transition-colors ${borderClass}`}>
       <div className="flex items-center gap-4">
         <div className="p-3 bg-white/5 rounded-xl">
           {icon}
