@@ -3,10 +3,13 @@ import mongoose from 'mongoose';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route"; 
 
+// BARIS AJAIB: Mematikan cache Vercel secara paksa!
+// ESP32 dijamin akan selalu mendapat data paling baru dari database, bukan data beku.
+export const dynamic = 'force-dynamic';
+
 // 1. Endpoint GET: Dibaca oleh ESP32 (TIDAK DIKUNCI)
 export async function GET() {
   try {
-    // Bangun koneksi langsung menggunakan Mongoose (Bypass Error client.db)
     if (mongoose.connection.readyState !== 1) {
       await mongoose.connect(process.env.MONGODB_URI);
     }
@@ -29,7 +32,6 @@ export async function GET() {
 // 2. Endpoint POST: Menyimpan pilihan dari Website (DIKUNCI KHUSUS ADMIN)
 export async function POST(request) {
   try {
-    // --- BLOK KEAMANAN RBAC (ROLE-BASED ACCESS CONTROL) ---
     const session = await getServerSession(authOptions);
 
     if (!session || session?.user?.role !== "admin") {
@@ -38,11 +40,9 @@ export async function POST(request) {
         { status: 403 }
       );
     }
-    // --------------------------------------------------------
 
     const body = await request.json();
     
-    // Bangun koneksi langsung menggunakan Mongoose (Bypass Error client.db)
     if (mongoose.connection.readyState !== 1) {
       await mongoose.connect(process.env.MONGODB_URI);
     }
@@ -53,7 +53,7 @@ export async function POST(request) {
       tanaman: body.tanaman || "PAKCOY",
       usia_hari: parseInt(body.usia_hari) || 1,
       aktif: body.aktif ?? true,
-      timestamp: new Date().toISOString() // Simpan jadi teks biar ESP32 nggak bingung
+      timestamp: new Date().toISOString() // Cap waktu unik agar ESP32 tau ini perintah baru
     };
 
     await collection.insertOne(newCommand);
