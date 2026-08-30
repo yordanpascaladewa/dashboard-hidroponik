@@ -2,30 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: #121315;
+  --foreground: #ffffff;
+}
+
 body {
-  background-color: #f7f9fb;
-  color: #191c1e;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* Custom Minimalist Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #e0e3e5;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #bbcabf;
-}
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-/* Utilitas tambahan jika dibutuhkan */
-.glass-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(224, 227, 229, 0.5);
-}
+/* Neon Glow Utility */
+.glow-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }

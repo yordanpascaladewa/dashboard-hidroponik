@@ -1,9 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react'; // Tambahan import NextAuth
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock, WifiOff } from 'lucide-react';
 
 export default function DashboardPage() {
+  // Panggil data sesi dari NextAuth
+  const { data: session, status } = useSession();
+  const isAdmin = session?.user?.role === 'admin'; // Cek apakah role-nya admin
+
   const [telemetry, setTelemetry] = useState({
     suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY WAIT'
   });
@@ -33,12 +38,10 @@ export default function DashboardPage() {
           const currentOnlineStatus = diffMinutes <= 3;
           setIsOnline(currentOnlineStatus);
 
-          // 100% DATA ASLI DARI MONGODB (Tanpa animasi jitter)
           setTelemetry(latest);
 
           const history = json.data.slice(0, 20).reverse().map((item) => {
             return {
-              // Hilangkan detik agar rapi di HP
               waktu: new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
               pH: parseFloat(item.ph.toFixed(2)),
               TDS: Math.round(item.tds)
@@ -60,7 +63,7 @@ export default function DashboardPage() {
 
   const handleUpdateTanaman = async (e) => {
     e.preventDefault();
-    if (isLocked || !isOnline) return;
+    if (isLocked || !isOnline || !isAdmin) return; // Tambahan proteksi jika bukan admin
 
     setStatusMessage('Mengirim perintah...');
 
@@ -79,7 +82,7 @@ export default function DashboardPage() {
         setStatusMessage('Berhasil! Alat akan segera menyesuaikan.');
         setTimeout(() => setStatusMessage(''), 4000);
       } else {
-        setStatusMessage('Gagal mengirim perintah.');
+        setStatusMessage('Gagal mengirim perintah. Pastikan Anda Admin.');
       }
     } catch (err) {
       console.error(err);
@@ -87,12 +90,25 @@ export default function DashboardPage() {
     }
   };
 
+  // Tampilkan loading state saat mengecek status login
+  if (status === 'loading') {
+    return <div className="min-h-screen flex items-center justify-center text-slate-400 font-mono text-sm">Memuat Dashboard...</div>;
+  }
+
   return (
     <main className="p-5 md:p-10 w-full flex flex-col gap-6 md:gap-8 pb-12">
       <div className="flex justify-between items-end mb-2 px-1">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">System Overview</h1>
           <p className="text-[10px] md:text-[11px] text-slate-500 uppercase tracking-widest font-mono">Live Telemetry Data & Control</p>
+        </div>
+        
+        {/* Indikator Login Role */}
+        <div className="text-right">
+          <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Masuk Sebagai</p>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isAdmin ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-slate-800 text-slate-300 border border-slate-600'}`}>
+            {session?.user?.username || 'Guest'} ({session?.user?.role || 'User'})
+          </span>
         </div>
       </div>
 
@@ -120,62 +136,73 @@ export default function DashboardPage() {
           )}
         </div>
         
-        <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-end">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
-            <select 
-              value={selectedTanaman}
-              onChange={(e) => setSelectedTanaman(e.target.value)}
-              disabled={isLocked || !isOnline}
-              className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
-              }`}
-            >
-              {daftarTanaman.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+        {/* LOGIKA RBAC KONDISIONAL (ADMIN VS USER) */}
+        {!isAdmin ? (
+          <div className="flex flex-col items-center justify-center p-6 bg-[#121315] border border-white/5 rounded-xl gap-2 mt-2">
+            <Lock size={28} className="text-red-400/80 mb-1" />
+            <span className="text-sm font-bold text-slate-300">Akses Ditolak</span>
+            <span className="text-[10px] md:text-xs text-slate-500 text-center max-w-md">Akun Anda <b>(User)</b> hanya memiliki hak akses pantauan pasif (Read-Only). Hubungi <b>Administrator</b> untuk mengubah setpoint nutrisi komoditas.</span>
           </div>
+        ) : (
+          <>
+            <form onSubmit={handleUpdateTanaman} className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-end mt-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Komoditas Tanaman</label>
+                <select 
+                  value={selectedTanaman}
+                  onChange={(e) => setSelectedTanaman(e.target.value)}
+                  disabled={isLocked || !isOnline}
+                  className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
+                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                  }`}
+                >
+                  {daftarTanaman.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
-            <input 
-              type="number" 
-              min="1" 
-              max="60"
-              value={selectedUsia}
-              onChange={(e) => setSelectedUsia(e.target.value)}
-              disabled={isLocked || !isOnline}
-              className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
-                isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
-              }`}
-              required
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Umur Bibit (Hari)</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="60"
+                  value={selectedUsia}
+                  onChange={(e) => setSelectedUsia(e.target.value)}
+                  disabled={isLocked || !isOnline}
+                  className={`w-full bg-[#121315] border rounded-xl p-3 text-white font-medium text-sm transition-all ${
+                    isLocked || !isOnline ? 'opacity-50 cursor-not-allowed border-white/5' : 'border-white/10 focus:outline-none focus:border-[#10B981]'
+                  }`}
+                  required
+                />
+              </div>
 
-          <button 
-            type="submit"
-            disabled={isLocked || !isOnline}
-            className={`font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
-              isLocked || !isOnline 
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5' 
-                : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer'
-            }`}
-          >
-            <Send size={18} /> Terapkan
-          </button>
-        </form>
+              <button 
+                type="submit"
+                disabled={isLocked || !isOnline}
+                className={`font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all text-sm uppercase tracking-wider ${
+                  isLocked || !isOnline 
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5' 
+                    : 'bg-[#10B981] hover:bg-[#059669] text-[#0d0e0f] shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer'
+                }`}
+              >
+                <Send size={18} /> Terapkan
+              </button>
+            </form>
 
-        {isLocked && isOnline && (
-          <p className="text-[10px] md:text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 leading-relaxed">
-            ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama).
-          </p>
-        )}
+            {isLocked && isOnline && (
+              <p className="text-[10px] md:text-[11px] font-mono text-amber-400/80 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10 leading-relaxed mt-1">
+                ⚠️ <b>Pemberitahuan:</b> Komoditas dan umur bibit terkunci. Untuk mengubahnya, lakukan <b>reset manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan lama).
+              </p>
+            )}
 
-        {statusMessage && (
-          <p className={`text-xs font-mono mt-1 animate-pulse ${statusMessage.includes('Gagal') || statusMessage.includes('kesalahan') ? 'text-red-400' : 'text-[#10B981]'}`}>
-            {statusMessage}
-          </p>
+            {statusMessage && (
+              <p className={`text-xs font-mono mt-1 animate-pulse ${statusMessage.includes('Gagal') || statusMessage.includes('kesalahan') ? 'text-red-400' : 'text-[#10B981]'}`}>
+                {statusMessage}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -189,14 +216,13 @@ export default function DashboardPage() {
 
       <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         
-        {/* GRAFIK UKURAN FLEKSIBEL (HP LEBIH TINGGI) */}
+        {/* GRAFIK UKURAN FLEKSIBEL */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-5 md:p-7 border border-white/5 shadow-lg flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base md:text-lg font-bold">Tren Kualitas Air (Real-Time)</h2>
             {!isOnline && <span className="text-[9px] md:text-xs font-mono text-red-400 border border-red-500/20 bg-red-500/10 px-2 py-1 rounded">PAUSED</span>}
           </div>
           
-          {/* TINGGI GRAFIK DIPERBESAR KHUSUS HP (min-h-[250px]) */}
           <div className="w-full min-h-[250px] md:min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>

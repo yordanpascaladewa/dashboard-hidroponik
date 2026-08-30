@@ -1,4 +1,5 @@
 import './globals.css';
+import Providers from '@/components/Provider';
 
 export const metadata = {
   title: 'AeroGrow Pro',
@@ -9,7 +10,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id">
       <body className="bg-[#121315] text-white antialiased">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

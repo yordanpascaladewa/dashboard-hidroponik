@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sprout, LogIn, Cpu, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react'; // Import fungsi login dari NextAuth
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -46,21 +47,30 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLoginSubmit = (e) => {
+  // FUNGSI LOGIN TERINTEGRASI NEXTAUTH & MONGODB
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
       setErrorMessage('Username dan Password wajib diisi!');
       return;
     }
-    if (username === 'Admin' && password === '12345') {
-      setErrorMessage('');
-      
-      // INI KODINGAN TAMBAHANNYA: MEMBUAT TIKET LOGIN (COOKIE) BERLAKU 1 HARI (86400 detik)
-      document.cookie = "auth_session=true; path=/; max-age=86400";
-      
-      router.push('/dashboard');
-    } else {
-      setErrorMessage('Username atau Password salah!');
+
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        username,
+        password,
+      });
+
+      if (result.error) {
+        setErrorMessage('Username atau Password salah!');
+      } else {
+        setErrorMessage('');
+        router.push('/dashboard'); // Lempar ke dashboard jika sukses
+        router.refresh();
+      }
+    } catch (error) {
+      setErrorMessage('Terjadi kesalahan pada sistem login.');
     }
   };
 

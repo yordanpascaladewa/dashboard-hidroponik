@@ -1,11 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // Ini akan menyapu bersih semua file di dalam src
-    "./app/**/*.{js,ts,jsx,tsx,mdx}", // Jaga-jaga kalau Next.js membaca folder app
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: "#10b981", // Emerald 500
+        surface: "#121315", // AeroGrow Dark Surface
+      },
+    },
   },
   plugins: [],
-}
+};

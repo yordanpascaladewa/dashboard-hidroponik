@@ -1,31 +1,42 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
+import { getServerSession } from "next-auth/next"; // Import pengecek sesi dari NextAuth
+import { authOptions } from "../auth/[...nextauth]/route"; // Panggil konfigurasi Auth lu
 
-// 1. Endpoint GET: Dibaca oleh ESP32 & Website untuk mengambil pengaturan tanaman terakhir dari MongoDB
+// 1. Endpoint GET: Dibaca oleh ESP32 & Website (TIDAK DIKUNCI)
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db(); // Menggunakan database default dari connection string URI
+    const db = client.db();
     const collection = db.collection('commands');
 
-    // Ambil dokumen perintah/setting terakhir yang disimpan
     let command = await collection.findOne({}, { sort: { _id: -1 } });
 
     if (!command) {
-      // Nilai default jika database MongoDB masih kosong
       command = { tanaman: "PAKCOY", usia_hari: 1, aktif: true };
     }
 
     return NextResponse.json(command, { status: 200 });
   } catch (error) {
-    // Fallback aman jika koneksi database ada kendala
     return NextResponse.json({ tanaman: "PAKCOY", usia_hari: 1, aktif: true }, { status: 200 });
   }
 }
 
-// 2. Endpoint POST: Menyimpan pilihan tanaman & umur dari Website langsung ke MongoDB Atlas
+// 2. Endpoint POST: Menyimpan pilihan (DIKUNCI KHUSUS ADMIN)
 export async function POST(request) {
   try {
+    // --- BLOK KEAMANAN RBAC (ROLE-BASED ACCESS CONTROL) ---
+    const session = await getServerSession(authOptions);
+
+    // Jika yang request belum login, ATAU rolenya bukan admin, tolak mentah-mentah!
+    if (!session || session?.user?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Akses Ditolak! Hanya Administrator yang berhak mengubah konfigurasi komoditas." }, 
+        { status: 403 }
+      );
+    }
+    // --------------------------------------------------------
+
     const body = await request.json();
     const client = await clientPromise;
     const db = client.db();
@@ -38,7 +49,6 @@ export async function POST(request) {
       timestamp: new Date()
     };
 
-    // Masukkan data baru ke collection 'commands' di MongoDB
     await collection.insertOne(newCommand);
 
     return NextResponse.json({ 
