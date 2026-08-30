@@ -13,7 +13,7 @@ export default function DashboardPage() {
   });
   const [chartData, setChartData] = useState([]);
   const [isOnline, setIsOnline] = useState(false);
-  const [chartRange, setChartRange] = useState('realtime'); // State tombol rentang waktu
+  const [chartRange, setChartRange] = useState('realtime'); 
   
   const [selectedTanaman, setSelectedTanaman] = useState('PAKCOY');
   const [selectedUsia, setSelectedUsia] = useState(1);
@@ -25,7 +25,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Selalu ambil data Real-time (10 detik terakhir) untuk update Kartu Metrik
         const resLatest = await fetch('/api/telemetry?range=realtime', { cache: 'no-store' });
         const jsonLatest = await resLatest.json();
         
@@ -36,10 +35,10 @@ export default function DashboardPage() {
           const dataTime = new Date(latest.timestamp).getTime();
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
-          setIsOnline(diffSeconds <= 35);
+          // Toleransi super ketat 15 detik
+          setIsOnline(diffSeconds <= 15);
         }
 
-        // 2. Ambil data Historis untuk Grafik sesuai tombol yang dipilih
         const resChart = await fetch(`/api/telemetry?range=${chartRange}`, { cache: 'no-store' });
         const jsonChart = await resChart.json();
 
@@ -48,7 +47,6 @@ export default function DashboardPage() {
             let timeStr = '';
             const dt = new Date(item.timestamp);
             
-            // Format waktu beda-beda tergantung rentang hari
             if (chartRange === 'realtime' || chartRange === '24h') {
               timeStr = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             } else {
@@ -71,9 +69,10 @@ export default function DashboardPage() {
     };
     
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    // Tarik data grafik dan metrik lebih cepat tiap 3 detik
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
-  }, [chartRange]); // Load ulang grafik kalau tombol waktu diganti
+  }, [chartRange]); 
 
   const handleUpdateTanaman = async (e) => {
     e.preventDefault();
@@ -106,7 +105,6 @@ export default function DashboardPage() {
   return (
     <main className="p-5 md:p-10 w-full flex flex-col gap-6 md:gap-8 pb-12 animate-in fade-in duration-500">
       
-      {/* 1. HEADER HALAMAN */}
       <div className="flex justify-between items-end mb-1 px-1">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2">System Overview</h1>
@@ -114,7 +112,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. METRIC CARDS UTAMA (Ditaruh Paling Atas biar FOKUS) */}
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={20} className="md:w-6 md:h-6"/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={20} className="md:w-6 md:h-6"/>} color="#10B981" />
@@ -122,15 +119,12 @@ export default function DashboardPage() {
         <MetricCard label="Fase" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={20} className="md:w-6 md:h-6"/>} color="#dfed1a" />
       </div>
 
-      {/* 3. AREA GRAFIK & DIAGNOSTIK */}
       <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         
-        {/* GRAFIK ADAPTIF */}
         <div className="lg:col-span-2 bg-[#1f2021] rounded-2xl p-5 md:p-7 border border-white/5 shadow-lg flex flex-col">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h2 className="text-base md:text-lg font-bold">Tren Kualitas Air</h2>
             
-            {/* TOMBOL PEMILIH WAKTU */}
             <div className="flex bg-[#121315] p-1.5 rounded-xl border border-white/5 shadow-inner">
               {[
                 { id: 'realtime', label: 'Live' },
@@ -163,34 +157,30 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="waktu" axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#64748b'}} dy={10} minTickGap={20} />
                 
-                {/* Y-AXIS ADAPTIF (FUNGSI BARU) */}
+                {/* PERBAIKAN GRAFIK: yAxisId untuk memisahkan skala pH dan TDS */}
                 <YAxis 
-                  yId="left" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fontSize: 9, fill: '#64748b'}} 
-                  domain={[(dataMin) => Math.max(0, dataMin - 0.5), (dataMax) => dataMax + 0.5]} 
-                  tickFormatter={(val) => val.toFixed(1)} 
+                  yAxisId="left" 
+                  hide={true} 
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']} 
                 />
                 <YAxis 
-                  yId="right" 
+                  yAxisId="right" 
                   orientation="right" 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{fontSize: 9, fill: '#64748b'}} 
-                  domain={[(dataMin) => Math.max(0, dataMin - 50), (dataMax) => dataMax + 50]} 
+                  domain={['dataMin - 50', 'dataMax + 50']} 
                   tickFormatter={(val) => Math.round(val)} 
                 />
                 
                 <Tooltip contentStyle={{ backgroundColor: '#121315', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px' }} />
-                <Area isAnimationActive={isOnline} yId="left" type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
-                <Area isAnimationActive={isOnline} yId="right" type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
+                <Area yAxisId="left" isAnimationActive={isOnline} type="monotone" dataKey="pH" stroke="#10B981" strokeWidth={3} fill="url(#colorPh)" />
+                <Area yAxisId="right" isAnimationActive={isOnline} type="monotone" dataKey="TDS" stroke="#8B5CF6" strokeWidth={2} fill="url(#colorTds)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* INFO SINGKAT (Di Sebelah Grafik) */}
         <div className="bg-[#1f2021] rounded-2xl p-5 md:p-7 border border-white/5 shadow-lg flex flex-col gap-5 md:gap-6">
           <h3 className="text-base md:text-lg font-bold border-b border-white/5 pb-3 md:pb-4">Info Singkat</h3>
           
@@ -223,7 +213,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. KONTROL KOMODITAS (Dipindah ke Paling Bawah) */}
       <div className={`bg-[#1f2021] rounded-2xl p-5 md:p-7 border shadow-lg flex flex-col gap-4 relative transition-colors ${
         !isOnline ? 'border-red-500/30' : isLocked ? 'border-amber-500/30' : 'border-white/5'
       }`}>

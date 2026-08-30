@@ -15,9 +15,7 @@ export default function MainLayout({ children }) {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setIsSidebarOpen(false);
-      }
+      if (window.innerWidth < 1024) setIsSidebarOpen(false);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -61,7 +59,8 @@ export default function MainLayout({ children }) {
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
           
-          setIsOnline(diffSeconds <= 35);
+          // Toleransi super ketat: 15 detik (karena ESP32 ngirim tiap 10 dtk)
+          setIsOnline(diffSeconds <= 15);
           setLastSync(new Date(latest.timestamp).toLocaleTimeString('id-ID', {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
           }));
@@ -72,7 +71,8 @@ export default function MainLayout({ children }) {
     };
     
     checkSystemStatus();
-    const interval = setInterval(checkSystemStatus, 10000);
+    // Tarik data lebih agresif: setiap 3 detik (awalnya 10 dtk)
+    const interval = setInterval(checkSystemStatus, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -102,10 +102,7 @@ export default function MainLayout({ children }) {
               <Menu size={24} />
             </button>
             
-            {/* KONTANER DETAIL HEADER KIRI */}
             <div className="flex flex-col justify-center border-l border-white/10 pl-4 md:pl-5">
-              
-              {/* Baris Atas: Tanggal & Waktu Live */}
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[10px] md:text-[12px] font-bold text-slate-200 tracking-wide uppercase">
                   {liveTime.tanggal}
@@ -119,7 +116,6 @@ export default function MainLayout({ children }) {
                 </div>
               </div>
 
-              {/* Baris Bawah: Status Koneksi & Sync Terakhir */}
               <div className="flex items-center gap-2.5">
                 <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
                   isOnline ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'
@@ -138,7 +134,6 @@ export default function MainLayout({ children }) {
                   <span className="md:hidden text-[#10B981]">{liveTime.jam} |</span> Sync: {lastSync}
                 </span>
               </div>
-              
             </div>
             
           </div>
