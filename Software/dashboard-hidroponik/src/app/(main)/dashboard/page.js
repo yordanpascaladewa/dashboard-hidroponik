@@ -266,7 +266,7 @@ export default function DashboardPage() {
           <div className="flex flex-col items-center justify-center p-8 bg-[#121315] border border-white/5 rounded-2xl gap-3">
             <Lock size={32} className="text-red-400/80 mb-1" />
             <span className="text-base font-bold text-slate-200">Akses Ditolak</span>
-            <span className="text-[11px] md:text-sm text-slate-500 text-center max-w-lg">Akun Anda <b>(User)</b> hanya memiliki hak akses pantauan pasif. Hubungi <b>Administrator</b> untuk mengubah setpoint nutrisi.</span>
+            <span className="text-[11px] md:text-sm text-slate-500 text-center max-w-lg">Akun Anda <b>(User)</b> hanya memiliki hak akses pantauan pasif. Hubungi <b>Admin</b> untuk mengubah setpoint nutrisi.</span>
           </div>
         ) : (
           <>
