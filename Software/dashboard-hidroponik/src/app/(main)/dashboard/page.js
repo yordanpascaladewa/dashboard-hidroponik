@@ -9,7 +9,7 @@ export default function DashboardPage() {
   const isAdmin = session?.user?.role === 'admin'; 
 
   const [telemetry, setTelemetry] = useState({
-    suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY WAIT'
+    suhu: 0, ph: 0, tds: 0, voltaseBaterai: 0, energiSolar: 0, usia_hari: 0, tanaman: 'STANDBY'
   });
   const [chartData, setChartData] = useState([]);
   const [isOnline, setIsOnline] = useState(false);
@@ -20,12 +20,21 @@ export default function DashboardPage() {
   const [statusMessage, setStatusMessage] = useState('');
 
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
-  const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY WAIT';
+  
+  // FIX: Mengenali status "STANDBY" dan "STANDBY WAIT" agar form otomatis terbuka
+  const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY' && telemetry.tanaman !== 'STANDBY WAIT';
+
+  // FIX: Sinkronisasi otomatis box komoditas dan umur bibit dengan data yang sedang aktif
+  useEffect(() => {
+    if (isLocked) {
+      setSelectedTanaman(telemetry.tanaman);
+      setSelectedUsia(telemetry.usia_hari || 1);
+    }
+  }, [telemetry.tanaman, telemetry.usia_hari, isLocked]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Cache-buster ditambahkan agar angka selalu update realtime
         const resLatest = await fetch(`/api/telemetry?range=realtime&_t=${Date.now()}`, { cache: 'no-store' });
         const jsonLatest = await resLatest.json();
         
@@ -115,7 +124,6 @@ export default function DashboardPage() {
       </div>
 
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
-        {/* Ukuran ikon diubah menjadi size={24} dan md:w-8 md:h-8 */}
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24} className="md:w-8 md:h-8"/>} color="#63f7ff" />
         <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24} className="md:w-8 md:h-8"/>} color="#10B981" />
         <MetricCard label="Nutrisi" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24} className="md:w-8 md:h-8"/>} color="#8B5CF6" />
@@ -333,7 +341,6 @@ function MetricCard({ label, value, unit, icon, color }) {
         <div className="p-3 md:p-4 rounded-2xl bg-white/5" style={{ color: color }}>{icon}</div>
       </div>
       <div className="flex items-baseline gap-2">
-        {/* Kelas Tailwind diubah ke text-4xl sampai text-6xl */}
         <span className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tighter">{value}</span>
         <span className="text-sm md:text-base font-bold text-slate-500" style={{ color }}>{unit}</span>
       </div>
