@@ -7,7 +7,7 @@ import { Menu, Clock, Wifi, WifiOff, ShieldAlert, UserCircle } from 'lucide-reac
 export default function MainLayout({ children }) {
   const { data: session } = useSession(); 
   const userRole = session?.user?.role || 'user';
-  const userName = session?.user?.name || (userRole === 'admin' ? 'Administrator' : 'Pengguna');
+  const userName = session?.user?.name || (userRole === 'admin' ? 'Admin' : 'User');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isOnline, setIsOnline] = useState(false);
