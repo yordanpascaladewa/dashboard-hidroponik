@@ -1,9 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react'; 
 import Sidebar from '../Sidebar';
-import { Menu, Clock, Wifi, WifiOff } from 'lucide-react';
+import { Menu, Clock, Wifi, WifiOff, ShieldAlert, UserCircle } from 'lucide-react'; 
 
 export default function MainLayout({ children }) {
+  const { data: session } = useSession(); 
+  const userRole = session?.user?.role || 'user';
+  const userName = session?.user?.name || (userRole === 'admin' ? 'Administrator' : 'Pengguna');
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSync, setLastSync] = useState('--:--:--');
@@ -15,7 +20,6 @@ export default function MainLayout({ children }) {
 
   useEffect(() => {
     const handleResize = () => {
-      // Sidebar otomatis terbuka penuh di Desktop, dan tertutup di HP
       if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
       } else {
@@ -64,7 +68,6 @@ export default function MainLayout({ children }) {
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
           
-          // Toleransi super ketat: 15 detik (karena ESP32 ngirim tiap 10 dtk)
           setIsOnline(diffSeconds <= 15);
           setLastSync(new Date(latest.timestamp).toLocaleTimeString('id-ID', {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -76,7 +79,6 @@ export default function MainLayout({ children }) {
     };
     
     checkSystemStatus();
-    // Tarik data lebih agresif: setiap 3 detik (awalnya 10 dtk)
     const interval = setInterval(checkSystemStatus, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -95,7 +97,6 @@ export default function MainLayout({ children }) {
       }`}>
         <Sidebar 
           onClose={() => {
-            // Cegah sidebar menutup di desktop saat link diklik
             if (window.innerWidth < 1024) {
               setIsSidebarOpen(false);
             }
@@ -104,17 +105,19 @@ export default function MainLayout({ children }) {
       </div>
       
       <div className="flex-1 flex flex-col h-[100dvh] min-w-0 overflow-hidden">
-        <header className="h-[90px] flex items-center px-6 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0 w-full">
-          <div className="flex items-center gap-4 md:gap-5 w-full">
-            
+        
+        {/* HEADER */}
+        <header className="h-[90px] flex items-center px-4 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0 w-full justify-between">
+          
+          <div className="flex items-center gap-3 md:gap-5">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400 cursor-pointer shrink-0"
+              className="p-2 md:p-2.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400 cursor-pointer shrink-0"
             >
               <Menu size={24} />
             </button>
             
-            <div className="flex flex-col justify-center border-l border-white/10 pl-4 md:pl-5">
+            <div className="flex flex-col justify-center border-l border-white/10 pl-3 md:pl-5">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[10px] md:text-[12px] font-bold text-slate-200 tracking-wide uppercase">
                   {liveTime.tanggal}
@@ -147,8 +150,24 @@ export default function MainLayout({ children }) {
                 </span>
               </div>
             </div>
-            
           </div>
+
+          {/* INDIKATOR ROLE USER & ADMIN */}
+          <div className="flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10">
+            <div className="text-right hidden sm:block">
+              <div className="text-sm font-bold text-slate-200">{userName}</div>
+              <div className={`text-[9px] font-mono tracking-widest uppercase mt-0.5 ${userRole === 'admin' ? 'text-amber-400' : 'text-blue-400'}`}>
+                {userRole === 'admin' ? 'Admin Access' : 'View Only'}
+              </div>
+            </div>
+            <div className={`p-2.5 rounded-xl flex items-center gap-2 border ${userRole === 'admin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+              {userRole === 'admin' ? <ShieldAlert size={20} /> : <UserCircle size={20} />}
+              <span className="text-[11px] font-bold uppercase tracking-wider sm:hidden">
+                {userRole}
+              </span>
+            </div>
+          </div>
+
         </header>
 
         <div className="flex-1 overflow-y-auto bg-[#121315]">
