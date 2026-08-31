@@ -15,7 +15,12 @@ export default function MainLayout({ children }) {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) setIsSidebarOpen(false);
+      // Sidebar otomatis terbuka penuh di Desktop, dan tertutup di HP
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -88,7 +93,14 @@ export default function MainLayout({ children }) {
       <div className={`fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out shrink-0 bg-[#121315] border-r border-white/5 ${
         isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden'
       }`}>
-        <Sidebar onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar 
+          onClose={() => {
+            // Cegah sidebar menutup di desktop saat link diklik
+            if (window.innerWidth < 1024) {
+              setIsSidebarOpen(false);
+            }
+          }} 
+        />
       </div>
       
       <div className="flex-1 flex flex-col h-[100dvh] min-w-0 overflow-hidden">
