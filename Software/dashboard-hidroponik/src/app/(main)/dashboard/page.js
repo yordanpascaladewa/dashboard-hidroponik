@@ -25,7 +25,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resLatest = await fetch('/api/telemetry?range=realtime', { cache: 'no-store' });
+        // Cache-buster ditambahkan agar angka selalu update realtime
+        const resLatest = await fetch(`/api/telemetry?range=realtime&_t=${Date.now()}`, { cache: 'no-store' });
         const jsonLatest = await resLatest.json();
         
         if (jsonLatest.data && jsonLatest.data.length > 0) {
@@ -38,22 +39,21 @@ export default function DashboardPage() {
           setIsOnline(diffSeconds <= 15);
         }
 
-        const resChart = await fetch(`/api/telemetry?range=${chartRange}`, { cache: 'no-store' });
+        const resChart = await fetch(`/api/telemetry?range=${chartRange}&_t=${Date.now()}`, { cache: 'no-store' });
         const jsonChart = await resChart.json();
 
         if (jsonChart.data) {
           const history = jsonChart.data.slice().reverse().map((item) => {
             const dt = new Date(item.timestamp);
             
-            // Format waktu dibikin SELALU UNIK untuk menghindari bug "Dot Hilang" di Recharts
             const datePart = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
             const timePart = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             
             let timeStr = '';
             if (chartRange === 'realtime' || chartRange === '24h') {
-              timeStr = timePart; // cth: "14:30"
+              timeStr = timePart; 
             } else {
-              timeStr = `${datePart} ${timePart}`; // cth: "31 Agu 14:30" (Selalu unik!)
+              timeStr = `${datePart} ${timePart}`; 
             }
 
             return {
@@ -115,10 +115,11 @@ export default function DashboardPage() {
       </div>
 
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
-        <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={20} className="md:w-6 md:h-6"/>} color="#63f7ff" />
-        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={20} className="md:w-6 md:h-6"/>} color="#10B981" />
-        <MetricCard label="Nutrisi" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={20} className="md:w-6 md:h-6"/>} color="#8B5CF6" />
-        <MetricCard label="Fase" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={20} className="md:w-6 md:h-6"/>} color="#dfed1a" />
+        {/* Ukuran ikon diubah menjadi size={24} dan md:w-8 md:h-8 */}
+        <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24} className="md:w-8 md:h-8"/>} color="#63f7ff" />
+        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24} className="md:w-8 md:h-8"/>} color="#10B981" />
+        <MetricCard label="Nutrisi" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24} className="md:w-8 md:h-8"/>} color="#8B5CF6" />
+        <MetricCard label="Fase" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={24} className="md:w-8 md:h-8"/>} color="#dfed1a" />
       </div>
 
       <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
@@ -158,7 +159,6 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 
-                {/* Format sumbu X dimanipulasi agar kelihatan rapi di bawah, tapi data aslinya tetap unik */}
                 <XAxis 
                   dataKey="waktu" 
                   axisLine={false} 
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                   tickFormatter={(str) => {
                     if (chartRange === '7d' || chartRange === '30d') {
                       const parts = str.split(' ');
-                      if (parts.length >= 2) return `${parts[0]} ${parts[1]}`; // Cuma nampilin "31 Agu"
+                      if (parts.length >= 2) return `${parts[0]} ${parts[1]}`; 
                     }
                     return str;
                   }}
@@ -327,14 +327,15 @@ export default function DashboardPage() {
 
 function MetricCard({ label, value, unit, icon, color }) {
   return (
-    <div className="bg-[#1f2021] rounded-2xl p-5 md:p-6 border border-white/5 shadow-lg flex flex-col gap-3 md:gap-4 hover:border-white/10 transition-colors">
+    <div className="bg-[#1f2021] rounded-[24px] p-6 md:p-7 border border-white/5 shadow-lg flex flex-col gap-4 md:gap-8 hover:border-white/10 transition-colors">
       <div className="flex justify-between items-start">
-        <span className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
-        <div className="p-2 md:p-2.5 rounded-xl bg-white/5" style={{ color: color }}>{icon}</div>
+        <span className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
+        <div className="p-3 md:p-4 rounded-2xl bg-white/5" style={{ color: color }}>{icon}</div>
       </div>
-      <div className="flex items-baseline gap-1.5 md:gap-2">
-        <span className="text-3xl md:text-4xl font-black font-mono tracking-tight">{value}</span>
-        <span className="text-[11px] md:text-xs font-bold text-slate-500" style={{ color }}>{unit}</span>
+      <div className="flex items-baseline gap-2">
+        {/* Kelas Tailwind diubah ke text-4xl sampai text-6xl */}
+        <span className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tighter">{value}</span>
+        <span className="text-sm md:text-base font-bold text-slate-500" style={{ color }}>{unit}</span>
       </div>
     </div>
   );
