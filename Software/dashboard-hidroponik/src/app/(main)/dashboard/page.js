@@ -316,7 +316,7 @@ export default function DashboardPage() {
               <div className="flex items-start gap-3 bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 mt-2">
                 <span className="text-amber-400 text-lg">⚠️</span>
                 <p className="text-xs font-mono text-amber-400/90 leading-relaxed pt-0.5">
-                  <b>Pemberitahuan:</b> Komoditas dan umur bibit sedang terkunci oleh sistem operasional. Untuk mengubah komoditas baru, silakan lakukan <b>Reset Manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan tahan 2 detik).
+                  <b>Pemberitahuan:</b> Komoditas dan umur bibit sedang terkunci oleh sistem operasional. Untuk mengubah komoditas baru, silakan lakukan <b>Reset Manual</b> pada alat fisik menggunakan tombol <i>rotary encoder</i> (tekan tahan 3 detik).
                 </p>
               </div>
             )}
