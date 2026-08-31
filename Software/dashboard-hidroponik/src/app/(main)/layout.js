@@ -107,9 +107,9 @@ export default function MainLayout({ children }) {
       <div className="flex-1 flex flex-col h-[100dvh] min-w-0 overflow-hidden">
         
         {/* HEADER */}
-        <header className="h-[90px] flex items-center px-4 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0 w-full justify-between">
+        <header className="min-h-[76px] md:h-[90px] flex items-center px-4 md:px-8 border-b border-white/5 shrink-0 bg-[#121315] z-30 sticky top-0 w-full justify-between">
           
-          <div className="flex items-center gap-3 md:gap-5">
+          <div className="flex items-center gap-3 md:gap-5 min-w-0">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 md:p-2.5 hover:bg-white/10 rounded-xl transition-colors text-slate-400 cursor-pointer shrink-0"
@@ -117,22 +117,26 @@ export default function MainLayout({ children }) {
               <Menu size={24} />
             </button>
             
-            <div className="flex flex-col justify-center border-l border-white/10 pl-3 md:pl-5">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] md:text-[12px] font-bold text-slate-200 tracking-wide uppercase">
+            <div className="flex flex-col justify-center border-l border-white/10 pl-3 md:pl-5 min-w-0 overflow-hidden">
+              
+              <div className="flex items-center gap-2 mb-1 md:mb-1.5">
+                {/* Tanggal disembunyikan di HP agar tidak memakan tempat */}
+                <span className="hidden md:block text-[12px] font-bold text-slate-200 tracking-wide uppercase truncate">
                   {liveTime.tanggal}
                 </span>
                 <span className="hidden md:inline text-slate-600 font-bold">•</span>
-                <div className="hidden md:flex items-center gap-1.5">
+                
+                {/* Jam tampil di HP dan PC */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Clock size={12} className="text-[#10B981]" />
-                  <span className="text-[11px] font-mono font-semibold text-[#10B981] tracking-widest">
-                    {liveTime.jam} WIB
+                  <span className="text-[11px] md:text-[12px] font-mono font-semibold text-[#10B981] tracking-widest">
+                    {liveTime.jam} <span className="hidden sm:inline">WIB</span>
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
+              <div className="flex items-center gap-2 md:gap-2.5">
+                <div className={`flex shrink-0 items-center gap-1.5 px-2 py-0.5 rounded border ${
                   isOnline ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'
                 }`}>
                   {isOnline ? (
@@ -141,28 +145,28 @@ export default function MainLayout({ children }) {
                     <WifiOff size={10} className="text-red-400" />
                   )}
                   <span className={`text-[9px] font-bold uppercase tracking-widest ${isOnline ? 'text-[#10B981]' : 'text-red-400'}`}>
-                    {isOnline ? 'Sistem Online' : 'Sistem Offline'}
+                    {isOnline ? 'Online' : 'Offline'}
                   </span>
                 </div>
                 
-                <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
-                  <span className="md:hidden text-[#10B981]">{liveTime.jam} |</span> Sync: {lastSync}
+                <span className="text-[9px] md:text-[10px] font-mono text-slate-500 truncate">
+                  Sync: {lastSync}
                 </span>
               </div>
             </div>
           </div>
 
           {/* INDIKATOR ROLE USER & ADMIN */}
-          <div className="flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10">
+          <div className="flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10 shrink-0">
             <div className="text-right hidden sm:block">
               <div className="text-sm font-bold text-slate-200">{userName}</div>
               <div className={`text-[9px] font-mono tracking-widest uppercase mt-0.5 ${userRole === 'admin' ? 'text-amber-400' : 'text-blue-400'}`}>
                 {userRole === 'admin' ? 'Admin Access' : 'View Only'}
               </div>
             </div>
-            <div className={`p-2.5 rounded-xl flex items-center gap-2 border ${userRole === 'admin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
-              {userRole === 'admin' ? <ShieldAlert size={20} /> : <UserCircle size={20} />}
-              <span className="text-[11px] font-bold uppercase tracking-wider sm:hidden">
+            <div className={`p-2 md:p-2.5 rounded-xl flex items-center gap-2 border ${userRole === 'admin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+              {userRole === 'admin' ? <ShieldAlert size={18} className="md:w-5 md:h-5" /> : <UserCircle size={18} className="md:w-5 md:h-5" />}
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider sm:hidden">
                 {userRole}
               </span>
             </div>
