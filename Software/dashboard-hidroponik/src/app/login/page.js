@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sprout, LogIn, Cpu, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { Montserrat } from 'next/font/google';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react'; // Import fungsi login dari NextAuth
+import { signIn } from 'next-auth/react';
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -17,11 +17,9 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
 
-  // STATE UNTUK CEK STATUS ONLINE/OFFLINE
   const [isOnline, setIsOnline] = useState(false);
   const [lastSync, setLastSync] = useState('--:--:--');
 
-  // FUNGSI CEK STATUS REAL-TIME
   useEffect(() => {
     const checkSystemStatus = async () => {
       try {
@@ -66,7 +64,7 @@ export default function LoginPage() {
         setErrorMessage('Username atau Password salah!');
       } else {
         setErrorMessage('');
-        router.push('/dashboard'); // Lempar ke dashboard jika sukses
+        router.push('/dashboard');
         router.refresh();
       }
     } catch (error) {
@@ -81,14 +79,14 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300"></div>
       )}
 
-      {/* 1. HEADER DENGAN STATUS INDICATOR */}
+      {}
       <header className="absolute top-0 w-full flex justify-between items-center py-6 px-8 z-20">
         <div className="flex items-center gap-3">
           <Sprout size={32} className="text-[#10B981]" />
           <span className="text-2xl font-bold text-white tracking-tight">AeroGrow<span className="text-[#10B981]">Pro</span></span>
         </div>
 
-        {/* STATUS PILL (Hanya muncul jika modal login tertutup) */}
+        {}
         {!isLoginOpen && (
           <div className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full border shadow-sm transition-colors ${
             isOnline ? 'bg-[#1f2021] border-white/10' : 'bg-red-500/10 border-red-500/20'
@@ -101,7 +99,7 @@ export default function LoginPage() {
         )}
       </header>
 
-      {/* 2. LANDING PAGE CONTENT */}
+      {}
       {!isLoginOpen && (
         <main className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center">
           <div className="max-w-4xl mx-auto flex flex-col items-center mt-12">
@@ -110,7 +108,7 @@ export default function LoginPage() {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight mb-6">
-              Sistem Hidroponik <br/> 
+              Sistem Hidroponik Otomatis Adaptif <br/> 
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#10B981] to-[#3b82f6]">Universal</span>
             </h1>
             
@@ -128,7 +126,7 @@ export default function LoginPage() {
         </main>
       )}
 
-      {/* 3. TECH STACK BADGES */}
+      {}
       {!isLoginOpen && (
         <div className="relative z-10 w-full flex flex-wrap justify-center items-center gap-3 px-6 pb-12 mt-auto">
           <div className="flex items-center gap-2.5 bg-[#1f2021] border border-white/10 px-4 py-2 rounded-full shadow-lg cursor-default">
@@ -172,7 +170,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* 4. MODAL POP-UP LOGIN */}
+      {}
       {isLoginOpen && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
           <div className="w-full max-w-[420px] bg-[#1f2021] sm:rounded-[2rem] p-8 sm:p-10 flex flex-col shadow-2xl border border-white/10 relative">
@@ -190,7 +188,7 @@ export default function LoginPage() {
               <Sprout size={42} className="text-[#10B981]" />
             </div>
 
-            {/* STATUS DI DALAM MODAL LOGIN */}
+            {}
             <div className="flex justify-center mb-6">
               <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-[#10B981]' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                  <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-[#10B981] animate-pulse' : 'bg-red-500'}`}></span>
