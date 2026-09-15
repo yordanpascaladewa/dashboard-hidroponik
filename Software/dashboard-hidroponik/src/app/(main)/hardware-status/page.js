@@ -45,12 +45,10 @@ export default function HardwareStatusPage() {
     };
     
     fetchHardwareData();
-    // Dipercepat menjadi 3 detik agar aksi pompa yang sebentar tidak terlewat
     const interval = setInterval(fetchHardwareData, 3000); 
     return () => clearInterval(interval);
   }, []);
-
-  // Memisahkan logika pembacaan status relay
+  
   const isPhUpActive = telemetry.relay_ph_up === 1;
   const isDoserAActive = telemetry.relay_doser_a === 1;
   const isDoserBActive = telemetry.relay_doser_b === 1;

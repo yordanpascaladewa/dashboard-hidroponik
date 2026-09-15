@@ -7,14 +7,12 @@ const telemetrySchema = new mongoose.Schema({
   voltaseBaterai: { type: Number, default: 0 }, 
   energiSolar: { type: Number, default: 0 },
   
-  // --- TAMBAHAN LACI BARU UNTUK ESP32 ---
   usia_hari: { type: Number, default: 0 },
   tanaman: { type: String, default: 'STANDBY' },
   raw_volt_ph: { type: Number, default: 0 },
   raw_volt_tds: { type: Number, default: 0 },
   raw_adc_ph: { type: Number, default: 0 },
   raw_adc_tds: { type: Number, default: 0 },
-  // -------------------------------------
   
   timestamp: { type: Date, default: Date.now }
 });

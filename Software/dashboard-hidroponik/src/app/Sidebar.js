@@ -46,7 +46,6 @@ export default function Sidebar({ onClose }) {
       {/* TOMBOL KELUAR */}
       <div className="p-4 mb-2">
         <button 
-          // FIX: Menambahkan callbackUrl agar diarahkan ke halaman login
           onClick={() => signOut({ callbackUrl: '/login' })} 
           className="flex items-center gap-4 px-4 py-3.5 w-full text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl font-bold text-xs md:text-sm tracking-wider uppercase transition-all"
         >

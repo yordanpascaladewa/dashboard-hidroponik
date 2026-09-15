@@ -4,6 +4,38 @@ import { useSession } from 'next-auth/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock, WifiOff } from 'lucide-react';
 
+// Fungsi untuk mereplikasi logika target nutrisi dari ESP32 (main.cpp)
+const getTargetData = (tanaman, usia) => {
+  if (!tanaman || tanaman === 'STANDBY' || tanaman === 'STANDBY WAIT') return { ppm: null, ph: null };
+  const hari = parseInt(usia) || 0;
+  let ppm = 0;
+  let ph = 6.0;
+
+  switch (tanaman) {
+    case 'SELADA': 
+      ph = 5.8; ppm = hari <= 7 ? 500 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
+    case 'SAWI': 
+      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
+    case 'BAYAM': 
+      ph = 6.0; ppm = hari <= 7 ? 500 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1100; break;
+    case 'KANGKUNG': 
+      ph = 5.5; ppm = hari <= 7 ? 600 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
+    case 'PAKCOY': 
+      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1050 : 1200; break;
+    case 'CAISIM': 
+      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1000 : 1200; break;
+    case 'SELEDRI': 
+      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
+    case 'KALE': 
+      ph = 6.0; ppm = hari <= 7 ? 700 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
+    case 'MINT': 
+      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
+    default: 
+      return { ppm: null, ph: null };
+  }
+  return { ppm, ph };
+};
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const isAdmin = session?.user?.role === 'admin'; 
@@ -21,10 +53,8 @@ export default function DashboardPage() {
 
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
   
-  // FIX: Mengenali status "STANDBY" dan "STANDBY WAIT" agar form otomatis terbuka
   const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY' && telemetry.tanaman !== 'STANDBY WAIT';
 
-  // FIX: Sinkronisasi otomatis box komoditas dan umur bibit dengan data yang sedang aktif
   useEffect(() => {
     if (isLocked) {
       setSelectedTanaman(telemetry.tanaman);
@@ -113,6 +143,9 @@ export default function DashboardPage() {
     return <div className="min-h-screen flex items-center justify-center text-slate-400 font-mono text-sm">Memuat Dashboard...</div>;
   }
 
+  // Dapatkan target PPM dan pH berdasarkan data telemetri saat ini
+  const targetInfo = getTargetData(telemetry.tanaman, telemetry.usia_hari);
+
   return (
     <main className="p-5 md:p-10 w-full flex flex-col gap-6 md:gap-8 pb-12 animate-in fade-in duration-500">
       
@@ -125,8 +158,8 @@ export default function DashboardPage() {
 
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24} className="md:w-8 md:h-8"/>} color="#63f7ff" />
-        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} unit="pH" icon={<FlaskConical size={24} className="md:w-8 md:h-8"/>} color="#10B981" />
-        <MetricCard label="Nutrisi" value={telemetry.tds || '--'} unit="PPM" icon={<Droplets size={24} className="md:w-8 md:h-8"/>} color="#8B5CF6" />
+        <MetricCard label="Tingkat pH" value={telemetry.ph?.toFixed(2) || '--'} target={targetInfo.ph} unit="pH" icon={<FlaskConical size={24} className="md:w-8 md:h-8"/>} color="#10B981" />
+        <MetricCard label="Nutrisi" value={telemetry.tds || '--'} target={targetInfo.ppm} unit="PPM" icon={<Droplets size={24} className="md:w-8 md:h-8"/>} color="#8B5CF6" />
         <MetricCard label="Fase" value={telemetry.usia_hari || 0} unit="Hari" icon={<Calendar size={24} className="md:w-8 md:h-8"/>} color="#dfed1a" />
       </div>
 
@@ -333,16 +366,25 @@ export default function DashboardPage() {
   );
 }
 
-function MetricCard({ label, value, unit, icon, color }) {
+function MetricCard({ label, value, unit, icon, color, target }) {
   return (
-    <div className="bg-[#1f2021] rounded-[24px] p-6 md:p-7 border border-white/5 shadow-lg flex flex-col gap-4 md:gap-8 hover:border-white/10 transition-colors">
-      <div className="flex justify-between items-start">
+    <div className="bg-[#1f2021] rounded-[24px] p-6 md:p-7 border border-white/5 shadow-lg flex flex-col gap-3 hover:border-white/10 transition-colors">
+      <div className="flex justify-between items-start mb-2">
         <span className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">{label}</span>
         <div className="p-3 md:p-4 rounded-2xl bg-white/5" style={{ color: color }}>{icon}</div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tighter">{value}</span>
-        <span className="text-sm md:text-base font-bold text-slate-500" style={{ color }}>{unit}</span>
+      <div className="flex flex-col">
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tighter">{value}</span>
+          <span className="text-sm md:text-base font-bold text-slate-500" style={{ color }}>{unit}</span>
+        </div>
+        
+        {/* Tampilan teks target tambahan */}
+        {target !== undefined && target !== null && (
+          <span className="text-[10px] md:text-xs font-mono font-bold text-slate-500 mt-2 uppercase tracking-wider">
+            Target: <span style={{ color }}>{target}</span> {unit}
+          </span>
+        )}
       </div>
     </div>
   );

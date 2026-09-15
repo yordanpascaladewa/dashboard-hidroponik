@@ -3,11 +3,8 @@ import mongoose from 'mongoose';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route"; 
 
-// BARIS AJAIB: Mematikan cache Vercel secara paksa!
-// ESP32 dijamin akan selalu mendapat data paling baru dari database, bukan data beku.
 export const dynamic = 'force-dynamic';
 
-// 1. Endpoint GET: Dibaca oleh ESP32 (TIDAK DIKUNCI)
 export async function GET() {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -29,7 +26,6 @@ export async function GET() {
   }
 }
 
-// 2. Endpoint POST: Menyimpan pilihan dari Website (DIKUNCI KHUSUS ADMIN)
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -53,7 +49,7 @@ export async function POST(request) {
       tanaman: body.tanaman || "PAKCOY",
       usia_hari: parseInt(body.usia_hari) || 1,
       aktif: body.aktif ?? true,
-      timestamp: new Date().toISOString() // Cap waktu unik agar ESP32 tau ini perintah baru
+      timestamp: new Date().toISOString()
     };
 
     await collection.insertOne(newCommand);

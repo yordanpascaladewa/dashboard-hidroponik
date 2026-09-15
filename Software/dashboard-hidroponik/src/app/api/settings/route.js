@@ -10,7 +10,6 @@ export async function GET() {
     await connectMongoDB();
     let config = await Settings.findOne({ settingId: 'GLOBAL_CONFIG' });
     
-    // Kalau belum ada data di MongoDB, bikin default-nya sesuai rancangan sistem
     if (!config) {
       config = await Settings.create({ 
         settingId: 'GLOBAL_CONFIG',

@@ -9,19 +9,16 @@ export async function GET(request) {
       await mongoose.connect(process.env.MONGODB_URI);
     }
     const db = mongoose.connection.useDb("hidroponik");
-    // Asumsi nama collection database lu adalah 'telemetries'
     const collection = db.collection('telemetries'); 
 
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'realtime';
 
-    // Jika mode Live/Realtime, cukup ambil 20 data terakhir
     if (range === 'realtime') {
       const data = await collection.find({}).sort({ _id: -1 }).limit(20).toArray();
       return NextResponse.json({ success: true, data }, { status: 200 });
     }
 
-    // Jika mode 24H, 7D, 30D, hitung batas waktunya
     const now = new Date();
     let pastDate = new Date();
     
@@ -36,8 +33,6 @@ export async function GET(request) {
       ]
     };
 
-    // Trik Cerdas: Gunakan $sample agar MongoDB otomatis memilih 100 titik data 
-    // yang tersebar rata di rentang waktu tersebut biar grafik tidak berat/ngelag
     const data = await collection.aggregate([
       { $match: query },
       { $sample: { size: 100 } },

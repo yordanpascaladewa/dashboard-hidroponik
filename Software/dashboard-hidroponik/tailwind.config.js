@@ -6,8 +6,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#10b981", // Emerald 500
-        surface: "#121315", // AeroGrow Dark Surface
+        primary: "#10b981",
+        surface: "#121315", 
       },
     },
   },
