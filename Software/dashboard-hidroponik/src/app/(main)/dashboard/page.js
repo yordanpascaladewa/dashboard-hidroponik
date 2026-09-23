@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react'; 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock, WifiOff } from 'lucide-react';
+// Menambahkan icon AlertTriangle, CheckCircle, dan Droplet untuk Notifikasi
+import { Thermometer, Droplets, FlaskConical, Calendar, Zap, BatteryCharging, Sprout, Send, Lock, WifiOff, AlertTriangle, CheckCircle, Droplet } from 'lucide-react';
 
 // Fungsi untuk mereplikasi logika target nutrisi dari ESP32 (main.cpp)
 const getTargetData = (tanaman, usia) => {
@@ -12,26 +13,16 @@ const getTargetData = (tanaman, usia) => {
   let ph = 6.0;
 
   switch (tanaman) {
-    case 'SELADA': 
-      ph = 5.8; ppm = hari <= 7 ? 500 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
-    case 'SAWI': 
-      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
-    case 'BAYAM': 
-      ph = 6.0; ppm = hari <= 7 ? 500 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1100; break;
-    case 'KANGKUNG': 
-      ph = 5.5; ppm = hari <= 7 ? 600 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
-    case 'PAKCOY': 
-      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1050 : 1200; break;
-    case 'CAISIM': 
-      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1000 : 1200; break;
-    case 'SELEDRI': 
-      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
-    case 'KALE': 
-      ph = 6.0; ppm = hari <= 7 ? 700 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
-    case 'MINT': 
-      ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
-    default: 
-      return { ppm: null, ph: null };
+    case 'SELADA': ph = 5.8; ppm = hari <= 7 ? 500 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
+    case 'SAWI': ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
+    case 'BAYAM': ph = 6.0; ppm = hari <= 7 ? 500 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1100; break;
+    case 'KANGKUNG': ph = 5.5; ppm = hari <= 7 ? 600 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
+    case 'PAKCOY': ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1050 : 1200; break;
+    case 'CAISIM': ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 850 : hari <= 21 ? 1000 : 1200; break;
+    case 'SELEDRI': ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 800 : hari <= 21 ? 1000 : 1200; break;
+    case 'KALE': ph = 6.0; ppm = hari <= 7 ? 700 : hari <= 14 ? 900 : hari <= 21 ? 1100 : 1300; break;
+    case 'MINT': ph = 6.0; ppm = hari <= 7 ? 600 : hari <= 14 ? 700 : hari <= 21 ? 800 : 900; break;
+    default: return { ppm: null, ph: null };
   }
   return { ppm, ph };
 };
@@ -51,9 +42,50 @@ export default function DashboardPage() {
   const [selectedUsia, setSelectedUsia] = useState(1);
   const [statusMessage, setStatusMessage] = useState('');
 
+  // --- STATE BARU UNTUK FITUR NOTIFIKASI TANDON ---
+  const [waterCheckState, setWaterCheckState] = useState({
+    showAlert: false,
+    daysRemaining: 0,
+    exists: false
+  });
+
   const daftarTanaman = ["SELADA", "SAWI", "BAYAM", "KANGKUNG", "PAKCOY", "CAISIM", "SELEDRI", "KALE", "MINT"];
-  
   const isLocked = telemetry.tanaman && telemetry.tanaman !== 'STANDBY' && telemetry.tanaman !== 'STANDBY WAIT';
+
+  // --- LOGIKA PENGECEKAN TANDON AIR (LOCALSTORAGE) ---
+  useEffect(() => {
+    const calculateWaterCheck = () => {
+      const storedDate = localStorage.getItem('nextWaterCheckTimestamp');
+      if (storedDate) {
+        const nextCheck = parseInt(storedDate, 10);
+        const now = Date.now();
+        const diffTime = nextCheck - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (now >= nextCheck) {
+          // Jika waktu sekarang sudah melewati waktu target (5 hari)
+          setWaterCheckState({ showAlert: true, daysRemaining: 0, exists: true });
+        } else {
+          // Jika belum, tampilkan sisa hari
+          setWaterCheckState({ showAlert: false, daysRemaining: diffDays, exists: true });
+        }
+      } else {
+        setWaterCheckState({ showAlert: false, daysRemaining: 0, exists: false });
+      }
+    };
+
+    calculateWaterCheck(); // Cek saat pertama kali load
+    const interval = setInterval(calculateWaterCheck, 60000); // Update hitungan setiap 1 menit
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fungsi untuk mengatur ulang timer 5 hari ke depan
+  const handleResetWaterCheck = () => {
+    const nextCheck = Date.now() + (5 * 24 * 60 * 60 * 1000); // 5 Hari dalam milidetik
+    localStorage.setItem('nextWaterCheckTimestamp', nextCheck.toString());
+    setWaterCheckState({ showAlert: false, daysRemaining: 5, exists: true });
+  };
+  // ----------------------------------------------------
 
   useEffect(() => {
     if (isLocked) {
@@ -84,7 +116,6 @@ export default function DashboardPage() {
         if (jsonChart.data) {
           const history = jsonChart.data.slice().reverse().map((item) => {
             const dt = new Date(item.timestamp);
-            
             const datePart = dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
             const timePart = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             
@@ -103,7 +134,6 @@ export default function DashboardPage() {
           });
           setChartData(history);
         }
-
       } catch (error) { 
         console.error(error); 
         setIsOnline(false);
@@ -130,6 +160,8 @@ export default function DashboardPage() {
 
       if (res.ok) {
         setStatusMessage('Berhasil! Alat akan segera menyesuaikan.');
+        // TRIGGER TIMER 5 HARI SAAT SETPOINT BERHASIL DIKIRIM
+        handleResetWaterCheck();
         setTimeout(() => setStatusMessage(''), 4000);
       } else {
         setStatusMessage('Gagal mengirim perintah. Pastikan Anda Admin.');
@@ -143,7 +175,6 @@ export default function DashboardPage() {
     return <div className="min-h-screen flex items-center justify-center text-slate-400 font-mono text-sm">Memuat Dashboard...</div>;
   }
 
-  // Dapatkan target PPM dan pH berdasarkan data telemetri saat ini
   const targetInfo = getTargetData(telemetry.tanaman, telemetry.usia_hari);
 
   return (
@@ -155,6 +186,45 @@ export default function DashboardPage() {
           <p className="text-[10px] md:text-[11px] text-slate-500 uppercase tracking-widest font-mono">Live Telemetry Data & Control</p>
         </div>
       </div>
+
+      {/* --- BANNER NOTIFIKASI TANDON --- */}
+      {waterCheckState.exists && (
+        <div className={`p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-500 ${
+          waterCheckState.showAlert 
+            ? 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]' 
+            : 'bg-[#10B981]/10 border-[#10B981]/20'
+        }`}>
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className={`p-2.5 rounded-full ${waterCheckState.showAlert ? 'bg-amber-500/20' : 'bg-[#10B981]/20'}`}>
+              {waterCheckState.showAlert ? (
+                <AlertTriangle className="text-amber-400 w-6 h-6 md:w-7 md:h-7" />
+              ) : (
+                <Droplet className="text-[#10B981] w-6 h-6 md:w-7 md:h-7" />
+              )}
+            </div>
+            <div>
+              <h3 className={`text-sm md:text-base font-bold ${waterCheckState.showAlert ? 'text-amber-400' : 'text-[#10B981]'}`}>
+                {waterCheckState.showAlert ? 'Peringatan: Waktunya Cek Tandon Air!' : 'Jadwal Cek Tandon Air'}
+              </h3>
+              <p className="text-xs md:text-sm text-slate-400 mt-0.5 max-w-xl">
+                {waterCheckState.showAlert 
+                  ? 'Sudah 5 hari berlalu sejak konfigurasi terakhir. Silakan cek sisa volume air, bersihkan filter, dan pastikan sirkulasi nutrisi lancar.' 
+                  : `Pengecekan dan perawatan tandon air selanjutnya dalam waktu ${waterCheckState.daysRemaining} hari ke depan.`}
+              </p>
+            </div>
+          </div>
+            
+          {waterCheckState.showAlert && (
+            <button 
+              onClick={handleResetWaterCheck}
+              className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl text-xs md:text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-amber-500/30"
+            >
+              <CheckCircle size={18} /> Tandai Sudah Dicek
+            </button>
+          )}
+        </div>
+      )}
+      {/* ----------------------------------- */}
 
       <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-opacity duration-500 ${isOnline ? 'opacity-100' : 'opacity-50 grayscale-[30%]'}`}>
         <MetricCard label="Suhu Air" value={telemetry.suhu?.toFixed(1) || '--'} unit="°C" icon={<Thermometer size={24} className="md:w-8 md:h-8"/>} color="#63f7ff" />
@@ -379,7 +449,6 @@ function MetricCard({ label, value, unit, icon, color, target }) {
           <span className="text-sm md:text-base font-bold text-slate-500" style={{ color }}>{unit}</span>
         </div>
         
-        {/* Tampilan teks target tambahan */}
         {target !== undefined && target !== null && (
           <span className="text-[10px] md:text-xs font-mono font-bold text-slate-500 mt-2 uppercase tracking-wider">
             Target: <span style={{ color }}>{target}</span> {unit}
