@@ -75,7 +75,7 @@ export default function DashboardPage() {
           const dataTime = new Date(latest.timestamp).getTime();
           const currentTime = new Date().getTime();
           const diffSeconds = (currentTime - dataTime) / 1000;
-          setIsOnline(diffSeconds <= 15);
+          setIsOnline(diffSeconds <= 60);
         }
 
         const resChart = await fetch(`/api/telemetry?range=${chartRange}&_t=${Date.now()}`, { cache: 'no-store' });
